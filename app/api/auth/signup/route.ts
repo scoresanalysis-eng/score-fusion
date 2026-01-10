@@ -9,7 +9,7 @@ import { getClientIp } from "@/lib/utils";
 // Validation schema
 const signupSchema = z.object({
   email: z.string().email("Invalid email address"),
-  password: z.string().min(8, "Password must be at least 8 characters long"),
+  password: z.string().min(6, "Password must be at least 6 characters long"),
   displayName: z
     .string()
     .min(2, "Display name must be at least 2 characters long"),
@@ -60,19 +60,15 @@ export async function POST(request: NextRequest) {
     // Validate input
     const validatedData = signupSchema.parse(body);
 
-    // Age verification
-    if (validatedData.dob) {
-      const ageMs = Date.now() - validatedData.dob.getTime();
-      const ageYears = ageMs / (1000 * 60 * 60 * 24 * 365.25);
-      if (ageYears < 18) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: "You must be at least 18 years old to register",
-          },
-          { status: 400 }
-        );
-      }
+    // Basic password validation (minimum 6 characters as per schema)
+    if (validatedData.password.length < 6) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Password must be at least 6 characters long",
+        },
+        { status: 400 }
+      );
     }
 
     // Check if user already exists
@@ -87,30 +83,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate password strength
-    const passwordErrors: string[] = [];
-    if (validatedData.password.length < 8) {
-      passwordErrors.push("Password must be at least 8 characters long");
-    }
-    if (!/[A-Z]/.test(validatedData.password)) {
-      passwordErrors.push(
-        "Password must contain at least one uppercase letter"
-      );
-    }
-    if (!/[a-z]/.test(validatedData.password)) {
-      passwordErrors.push(
-        "Password must contain at least one lowercase letter"
-      );
-    }
-    if (!/\d/.test(validatedData.password)) {
-      passwordErrors.push("Password must contain at least one number");
-    }
-
-    if (passwordErrors.length > 0) {
-      return NextResponse.json(
-        { success: false, error: passwordErrors.join(", ") },
-        { status: 400 }
-      );
+    // Age verification (if DOB provided)
+    if (validatedData.dob) {
+      const ageMs = Date.now() - validatedData.dob.getTime();
+      const ageYears = ageMs / (1000 * 60 * 60 * 24 * 365.25);
+      if (ageYears < 18) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "You must be at least 18 years old to register",
+          },
+          { status: 400 }
+        );
+      }
     }
 
     // Hash password

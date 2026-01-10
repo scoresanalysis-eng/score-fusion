@@ -29,7 +29,6 @@ function SignupForm() {
     confirmPassword: "",
     displayName: "",
     country: "",
-    dob: "",
     referralCode: referralCode || "",
   });
   const [consents, setConsents] = useState({
@@ -47,8 +46,8 @@ function SignupForm() {
     setError("");
 
     // Validate password
-    if (formData.password.length < 8) {
-      setError("Password must be at least 8 characters long");
+    if (formData.password.length < 6) {
+      setError("Password must be at least 6 characters long");
       return;
     }
 
@@ -56,16 +55,6 @@ function SignupForm() {
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords do not match");
       return;
-    }
-
-    // Validate age if DOB provided
-    if (formData.dob) {
-      const dob = new Date(formData.dob);
-      const age = (Date.now() - dob.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
-      if (age < 18) {
-        setError("You must be at least 18 years old to register");
-        return;
-      }
     }
 
     setIsLoading(true);
@@ -145,7 +134,7 @@ function SignupForm() {
                 <Input
                   id="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="At least 8 characters"
+                  placeholder="At least 6 characters"
                   value={formData.password}
                   onChange={(e) => updateField("password", e.target.value)}
                   required
@@ -174,7 +163,7 @@ function SignupForm() {
                 <Input
                   id="confirmPassword"
                   type={showConfirmPassword ? "text" : "password"}
-                  placeholder="At least 8 characters"
+                  placeholder="At least 6 characters"
                   value={formData.confirmPassword}
                   onChange={(e) =>
                     updateField("confirmPassword", e.target.value)
