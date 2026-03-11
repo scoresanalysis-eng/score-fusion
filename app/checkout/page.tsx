@@ -75,9 +75,9 @@ const plans: Plan[] = [
 const getContactLinks = (plan: Plan, username: string) => [
   {
     label: "WhatsApp",
-    value: "+84 589 950 720",
-    href: `https://wa.me/84589950720?text=Hi!%20I%20want%20to%20subscribe%20to%20${encodeURIComponent(
-      plan.name
+    value: "+84 867 084 414",
+    href: `https://wa.me/84867084414?text=Hi!%20I%20want%20to%20subscribe%20to%20${encodeURIComponent(
+      plan.name,
     )}%20(%E2%82%AC${plan.price}).%20Please%20send%20payment%20details.`,
     color: "bg-green-500 hover:bg-green-600",
     icon: MessageSquare,
@@ -93,7 +93,7 @@ const getContactLinks = (plan: Plan, username: string) => [
     label: "Email",
     value: "Scorefusionn@gmail.com",
     href: `mailto:Scorefusionn@gmail.com?subject=VIP%20Subscription%20-%20${encodeURIComponent(
-      plan.name
+      plan.name,
     )}&body=Hi,%0D%0A%0D%0AI'd%20like%20to%20purchase%20the%20${
       plan.name
     }%20for%20%E2%82%AC${

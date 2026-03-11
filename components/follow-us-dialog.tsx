@@ -32,7 +32,7 @@ export function FollowUsDialog({ open, onOpenChange }: FollowUsDialogProps) {
 
         <div className="space-y-3 py-4">
           <a
-            href="https://api.whatsapp.com/send?phone=84589950720&text=Hello%2C%20I%20would%20like%20to%20get%20in%20touch%20with%20Score%20Fusion."
+            href="https://api.whatsapp.com/send?phone=84867084414&text=Hello%2C%20I%20would%20like%20to%20get%20in%20touch%20with%20Score%20Fusion."
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-3 p-3 rounded-lg border-2 border-border hover:border-primary hover:bg-primary/5 transition-colors"
