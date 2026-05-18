@@ -1,11 +1,12 @@
 "use client";
 
+import { useEffect, useState, useCallback, useMemo } from "react";
+import Link from "next/link";
 import { useApiClient } from "@/lib/api-client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { TrendingUp, Crown, Loader2 } from "lucide-react";
-import Link from "next/link";
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { PredictionCard } from "@/components/prediction-card";
 
 interface Tip {
   id: string;
@@ -59,8 +60,8 @@ export default function HistoryPage() {
   const itemsPerPage = 12;
 
   const filteredPredictions = useMemo(() => {
-    return allPredictions.filter((t) =>
-      filter === "all" ? true : filter === "free" ? !t.isVIP : t.isVIP
+    return allPredictions.filter((tip) =>
+      filter === "all" ? true : filter === "free" ? !tip.isVIP : tip.isVIP,
     );
   }, [allPredictions, filter]);
 
@@ -71,6 +72,7 @@ export default function HistoryPage() {
       const bDate = b.matchDate ? new Date(b.matchDate).getTime() : -Infinity;
       return bDate - aDate;
     });
+
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     return arr.slice(startIndex, endIndex);
@@ -97,7 +99,6 @@ export default function HistoryPage() {
     fetchHistory();
   }, [fetchHistory]);
 
-  // Reset to page 1 when filter changes
   useEffect(() => {
     setCurrentPage(1);
   }, [filter]);
@@ -154,173 +155,15 @@ export default function HistoryPage() {
                   <Loader2 className="animate-spin h-8 w-8 mx-auto mb-4" />
                   <p className="text-sm">Loading history...</p>
                 </div>
-              ) : allPredictions.filter((t) =>
-                  filter === "all"
-                    ? true
-                    : filter === "free"
-                    ? !t.isVIP
-                    : t.isVIP
-                ).length > 0 ? (
+              ) : filteredPredictions.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                   {displayedPredictions.map((tip) => (
-                    <Link
+                    <PredictionCard
                       key={tip.id}
-                      href={`/tips/${tip.id}`}
-                      className="block"
-                    >
-                      <Card className="hover:shadow-lg transition-all hover:border-primary/50">
-                        <CardContent className="p-3 sm:p-4">
-                          {/* Match Teams with Logos */}
-                          {tip.homeTeam && tip.awayTeam ? (
-                            <div className="mb-3">
-                              <div className="flex items-center justify-between gap-3 mb-2">
-                                <div className="flex items-center gap-2 flex-1 min-w-0">
-                                  {tip.homeTeam.logoUrl && (
-                                    <div className="relative h-8 w-8 sm:h-10 sm:w-10 shrink-0">
-                                      <img
-                                        src={tip.homeTeam.logoUrl}
-                                        alt={tip.homeTeam.name}
-                                        className="object-contain"
-                                      />
-                                    </div>
-                                  )}
-                                  <span className="font-semibold text-sm sm:text-base truncate">
-                                    {tip.homeTeam.name}
-                                  </span>
-                                </div>
-                                <div className="px-2 py-1 bg-muted rounded text-xs font-bold">
-                                  VS
-                                </div>
-                                <div className="flex items-center gap-2 flex-1 min-w-0 justify-end">
-                                  <span className="font-semibold text-sm sm:text-base truncate">
-                                    {tip.awayTeam.name}
-                                  </span>
-                                  {tip.awayTeam.logoUrl && (
-                                    <div className="relative h-8 w-8 sm:h-10 sm:w-10 shrink-0">
-                                      <img
-                                        src={tip.awayTeam.logoUrl}
-                                        alt={tip.awayTeam.name}
-                                        className="object-contain"
-                                      />
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          ) : (
-                            <h3 className="font-semibold text-sm sm:text-base mb-2">
-                              {tip.title}
-                            </h3>
-                          )}
-
-                          {/* League & Sport */}
-                          <div className="flex items-center gap-2 text-[10px] sm:text-xs text-muted-foreground mb-2">
-                            <span className="px-2 py-0.5 bg-secondary rounded">
-                              {tip.sport}
-                            </span>
-                            {tip.league && (
-                              <span className="truncate">{tip.league}</span>
-                            )}
-                          </div>
-                          <div className="flex items-center justify-center gap-2 text-[14px] sm:text-xs text-muted-foreground mb-2">
-                            {tip.matchDate && (
-                              <span className="truncate">
-                                {new Date(tip.matchDate).toLocaleString(
-                                  "en-US",
-                                  {
-                                    timeZone: "UTC",
-                                    weekday: "short",
-                                    month: "short",
-                                    day: "numeric",
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                    hour12: false,
-                                  }
-                                )}
-                              </span>
-                            )}
-                          </div>
-
-                          {/* Prediction Summary */}
-                          {tip.summary && (
-                            <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2 mb-3">
-                              {tip.summary}
-                            </p>
-                          )}
-
-                          {/* Tip Result Details */}
-                          {tip.tipResult && (
-                            <details className="mb-3">
-                              <summary className="text-[10px] md:text-xs lg:text-sm font-medium cursor-pointer text-primary hover:text-primary/80">
-                                Tip Result Details
-                              </summary>
-                              <div className="mt-1 space-y-1 text-[10px] md:text-xs lg:text-sm pl-2 border-l-2 border-primary/20">
-                                <div>
-                                  <span className="text-muted-foreground">
-                                    Settled At:{" "}
-                                  </span>
-                                  <span className="font-medium">
-                                    {new Date(
-                                      tip.tipResult.settledAt
-                                    ).toLocaleString()}
-                                  </span>
-                                </div>
-                                <div>
-                                  <span className="text-muted-foreground">
-                                    Outcome:{" "}
-                                  </span>
-                                  <span className="font-medium capitalize">
-                                    {tip.tipResult.outcome}
-                                  </span>
-                                </div>
-                                {tip.tipResult.payout && (
-                                  <div>
-                                    <span className="text-muted-foreground">
-                                      Payout:{" "}
-                                    </span>
-                                    <span className="font-medium">
-                                      €{tip.tipResult.payout}
-                                    </span>
-                                  </div>
-                                )}
-                              </div>
-                            </details>
-                          )}
-
-                          {/* Footer - Odds & Prediction */}
-                          <div className="flex items-center justify-between pt-2 border-t">
-                            {tip.predictedOutcome && (
-                              <div className="flex items-center gap-1">
-                                <span className="text-[10px] sm:text-xs text-muted-foreground">
-                                  Prediction:
-                                </span>
-                                <span className="text-xs sm:text-sm font-bold text-primary">
-                                  {tip.predictedOutcome}
-                                </span>
-                              </div>
-                            )}
-                            {tip.odds && (
-                              <div className="px-2 py-1 bg-primary/10 text-primary rounded font-bold text-xs sm:text-sm">
-                                Odds: {Number(tip.odds).toFixed(2)}
-                              </div>
-                            )}
-                            {tip.isVIP && (
-                              <Crown className="h-4 w-4 text-amber-500" />
-                            )}
-                            {tip.result === "won" && (
-                              <div className="px-2 py-1 bg-green-500 text-white text-xs font-bold rounded">
-                                Won
-                              </div>
-                            )}
-                            {tip.result === "lost" && (
-                              <div className="px-2 py-1 bg-red-500 text-white text-xs font-bold rounded">
-                                Lost
-                              </div>
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </Link>
+                      item={tip}
+                      showTipResultDetails
+                      showResultBadges
+                    />
                   ))}
                 </div>
               ) : (
@@ -336,7 +179,6 @@ export default function HistoryPage() {
                 </div>
               )}
 
-              {/* Pagination */}
               {totalPages > 1 && (
                 <div className="flex items-center justify-center gap-2 mt-6 md:mt-8">
                   <Button
