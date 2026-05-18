@@ -1,7 +1,7 @@
 "use client";
 /* eslint-disable @next/next/no-img-element */
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { Button } from "@/components/ui/button";
@@ -115,7 +115,59 @@ export default function AdminPredictionsPage() {
   const [filterResult, setFilterResult] = useState<string>("all");
   const [filterCategory, setFilterCategory] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 100;
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: itemsPerPage,
+    total: 0,
+    hasMore: false,
+    totalPages: 1,
+  });
+
+  const fetchTips = useCallback(
+    async (page = currentPage) => {
+      try {
+        const params = new URLSearchParams({
+          page: String(page),
+          limit: String(itemsPerPage),
+          sortBy: "createdAt",
+          sortOrder: "desc",
+        });
+
+        if (searchQuery.trim()) params.set("search", searchQuery.trim());
+        if (filterStatus !== "all") params.set("status", filterStatus);
+        if (filterResult !== "all") params.set("result", filterResult);
+        if (filterCategory !== "all") params.set("category", filterCategory);
+
+        const res = await fetch(`/api/admin/predictions?${params.toString()}`);
+        if (res.ok) {
+          const data = await res.json();
+          setTips(data.data.tips || []);
+          if (data.data.pagination) {
+            setPagination({
+              page: data.data.pagination.page || page,
+              limit: data.data.pagination.limit || itemsPerPage,
+              total: data.data.pagination.total || 0,
+              hasMore: Boolean(data.data.pagination.hasMore),
+              totalPages: data.data.pagination.totalPages || 1,
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch tips:", error);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [
+      currentPage,
+      filterCategory,
+      filterResult,
+      filterStatus,
+      itemsPerPage,
+      searchQuery,
+    ],
+  );
 
   useEffect(() => {
     if (!isLoading && (!user || user.role !== "ADMIN")) {
@@ -125,10 +177,15 @@ export default function AdminPredictionsPage() {
 
   useEffect(() => {
     if (user?.role === "ADMIN") {
-      fetchTips();
       fetchTeams();
     }
   }, [user]);
+
+  useEffect(() => {
+    if (user?.role === "ADMIN") {
+      fetchTips();
+    }
+  }, [user, fetchTips]);
 
   // Auto-update title when teams change
   useEffect(() => {
@@ -163,20 +220,6 @@ export default function AdminPredictionsPage() {
     editingTip,
   ]);
 
-  const fetchTips = async () => {
-    try {
-      const res = await fetch("/api/admin/predictions");
-      if (res.ok) {
-        const data = await res.json();
-        setTips(data.data.tips || []);
-      }
-    } catch (error) {
-      console.error("Failed to fetch tips:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const fetchTeams = async () => {
     try {
       const res = await fetch("/api/admin/teams");
@@ -190,7 +233,7 @@ export default function AdminPredictionsPage() {
   };
 
   const uploadToCloudinary = async (
-    file: File
+    file: File,
   ): Promise<{ secure_url: string; public_id: string }> => {
     const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME as
       | string
@@ -201,7 +244,7 @@ export default function AdminPredictionsPage() {
 
     if (!cloudName || !uploadPreset) {
       throw new Error(
-        "Cloudinary is not configured. Set NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME and NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET."
+        "Cloudinary is not configured. Set NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME and NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET.",
       );
     }
 
@@ -214,7 +257,7 @@ export default function AdminPredictionsPage() {
       {
         method: "POST",
         body: fd,
-      }
+      },
     );
     if (!res.ok) {
       try {
@@ -228,7 +271,7 @@ export default function AdminPredictionsPage() {
   };
 
   const handleTicketSnapshotUpload = async (
-    e: React.ChangeEvent<HTMLInputElement>
+    e: React.ChangeEvent<HTMLInputElement>,
   ) => {
     if (!e.target.files || e.target.files.length === 0) return;
     if (formData.ticketSnapshots.length >= 10) {
@@ -284,7 +327,7 @@ export default function AdminPredictionsPage() {
       const res = await fetch(
         `/api/admin/teams/search?query=${encodeURIComponent(query)}&sport=${
           formData.sport
-        }`
+        }`,
       );
       if (res.ok) {
         const data = await res.json();
@@ -304,7 +347,7 @@ export default function AdminPredictionsPage() {
 
   const handleSelectTeamFromAPI = async (
     team: Team,
-    position: "home" | "away"
+    position: "home" | "away",
   ) => {
     // Create team in our database if it doesn't exist
     try {
@@ -343,7 +386,7 @@ export default function AdminPredictionsPage() {
 
   const handleManualTeamLogoUpload = async (
     e: React.ChangeEvent<HTMLInputElement>,
-    position: "home" | "away"
+    position: "home" | "away",
   ) => {
     if (!e.target.files || e.target.files.length === 0) return;
     const file = e.target.files[0];
@@ -470,7 +513,7 @@ export default function AdminPredictionsPage() {
       });
 
       if (res.ok) {
-        fetchTips();
+        fetchTips(currentPage);
         setShowForm(false);
         setEditingTip(null);
         resetForm();
@@ -556,7 +599,7 @@ export default function AdminPredictionsPage() {
       });
 
       if (res.ok) {
-        fetchTips();
+        fetchTips(currentPage);
       } else {
         const error = await res.json();
         alert(error.error || "Failed to delete prediction");
@@ -570,7 +613,7 @@ export default function AdminPredictionsPage() {
   const handleSettle = async (id: string, result: string) => {
     if (
       !confirm(
-        `Are you sure you want to mark this prediction as ${result.toUpperCase()}?`
+        `Are you sure you want to mark this prediction as ${result.toUpperCase()}?`,
       )
     ) {
       return;
@@ -610,7 +653,7 @@ export default function AdminPredictionsPage() {
       });
 
       if (res.ok) {
-        fetchTips();
+        fetchTips(currentPage);
       } else {
         const error = await res.json();
         alert(error.error || "Failed to update prediction result");
@@ -620,6 +663,20 @@ export default function AdminPredictionsPage() {
       alert("Failed to update prediction result");
     }
   };
+
+  const totalPages = pagination.totalPages;
+  const displayStart =
+    pagination.total === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1;
+  const displayEnd =
+    pagination.total === 0
+      ? 0
+      : Math.min(currentPage * itemsPerPage, pagination.total);
+
+  useEffect(() => {
+    setCurrentPage((prev) =>
+      Math.min(prev, Math.max(1, pagination.totalPages)),
+    );
+  }, [pagination.totalPages]);
 
   if (isLoading || loading) {
     return (
@@ -632,32 +689,6 @@ export default function AdminPredictionsPage() {
   }
 
   if (!user || user.role !== "ADMIN") return null;
-
-  // Filter and search logic
-  const filteredTips = tips.filter((tip) => {
-    const matchesSearch =
-      searchQuery === "" ||
-      tip.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      tip.summary?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      tip.league?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      tip.homeTeam?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      tip.awayTeam?.name.toLowerCase().includes(searchQuery.toLowerCase());
-
-    const matchesStatus = filterStatus === "all" || tip.status === filterStatus;
-
-    const matchesResult = filterResult === "all" || tip.result === filterResult;
-
-    const matchesCategory =
-      filterCategory === "all" || tip.category === filterCategory;
-
-    return matchesSearch && matchesStatus && matchesResult && matchesCategory;
-  });
-
-  // Pagination logic
-  const totalPages = Math.ceil(filteredTips.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const paginatedTips = filteredTips.slice(startIndex, endIndex);
 
   return (
     <div className="min-h-screen bg-background">
@@ -735,8 +766,8 @@ export default function AdminPredictionsPage() {
               </select>
             </div>
             <div className="mt-2 text-sm text-muted-foreground">
-              Showing {startIndex + 1}-{Math.min(endIndex, filteredTips.length)}{" "}
-              of {filteredTips.length} predictions
+              Showing {displayStart}-{displayEnd} of {pagination.total}{" "}
+              predictions
             </div>
           </CardContent>
         </Card>
@@ -1473,7 +1504,7 @@ export default function AdminPredictionsPage() {
 
         {/* Tips List */}
         <div className="space-y-4">
-          {paginatedTips.map((tip) => (
+          {tips.map((tip) => (
             <Card key={tip.id}>
               <CardContent className="p-4 md:p-6">
                 <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
@@ -1628,31 +1659,25 @@ export default function AdminPredictionsPage() {
             </Card>
           ))}
 
-          {paginatedTips.length === 0 &&
-            filteredTips.length === 0 &&
-            tips.length > 0 && (
-              <Card>
-                <CardContent className="p-8 md:p-12 text-center text-muted-foreground">
-                  <ImageIcon className="h-12 w-12 md:h-16 md:w-16 mx-auto mb-4 opacity-50" />
-                  <p className="text-base md:text-lg mb-2">
-                    No predictions match your filters
-                  </p>
-                  <p className="text-xs md:text-sm">
-                    Try adjusting your search or filter criteria
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-
-          {tips.length === 0 && (
+          {pagination.total === 0 && (
             <Card>
               <CardContent className="p-8 md:p-12 text-center text-muted-foreground">
                 <ImageIcon className="h-12 w-12 md:h-16 md:w-16 mx-auto mb-4 opacity-50" />
                 <p className="text-base md:text-lg mb-2">
-                  No predictions found
+                  {searchQuery.trim() ||
+                  filterStatus !== "all" ||
+                  filterResult !== "all" ||
+                  filterCategory !== "all"
+                    ? "No predictions match your filters"
+                    : "No predictions found"}
                 </p>
                 <p className="text-xs md:text-sm">
-                  Create your first sports prediction to get started
+                  {searchQuery.trim() ||
+                  filterStatus !== "all" ||
+                  filterResult !== "all" ||
+                  filterCategory !== "all"
+                    ? "Try adjusting your search or filter criteria"
+                    : "Create your first sports prediction to get started"}
                 </p>
               </CardContent>
             </Card>

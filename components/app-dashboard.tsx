@@ -103,7 +103,7 @@ export default function DashboardPage() {
 
         // Fetch predictions - VIP if user has access, otherwise free
         const predictionsRes = await api.get(
-          `/predictions?vip=false&limit=3&today=true`
+          `/predictions?vip=false&limit=3&today=true`,
         );
 
         if (predictionsRes.success) {
@@ -114,7 +114,7 @@ export default function DashboardPage() {
         } else if (vipStatus && !user?.guest) {
           // If VIP predictions fail, fallback to free predictions
           const freeRes = await api.get(
-            "/predictions?vip=false&limit=3&today=true"
+            "/predictions?vip=false&limit=3&today=true",
           );
           if (freeRes.success) {
             const freeData = freeRes.data as { predictions: Prediction[] };
@@ -124,7 +124,7 @@ export default function DashboardPage() {
 
         // Fetch live matches
         const matchesRes = await api.get(
-          "/livescores/matches?status=live&limit=5"
+          "/livescores/matches?status=live&limit=5",
         );
         if (matchesRes.success) {
           const matchesData = matchesRes.data as { matches: Match[] };
@@ -165,7 +165,7 @@ export default function DashboardPage() {
         }
 
         setDerivedWinRate(
-          winRateCandidate && winRateCandidate > 0 ? winRateCandidate : null
+          winRateCandidate && winRateCandidate > 0 ? winRateCandidate : null,
         );
 
         // Fetch banner carousel
@@ -319,7 +319,7 @@ export default function DashboardPage() {
                                   hour: "2-digit",
                                   minute: "2-digit",
                                   hour12: false,
-                                }
+                                },
                               )}
                             </span>
                           )}
@@ -504,7 +504,7 @@ export default function DashboardPage() {
                   </h3>
                 </div>
                 <p className="text-[10px] sm:text-xs text-muted-foreground mb-2">
-                  "Made $2,400 last month following VIP tips!" - Sarah M.
+                  "Made $7,400 last month following VIP tips!" - Danielle.
                 </p>
                 <div className="flex items-center gap-1 text-[10px] ">
                   <span>⭐⭐⭐⭐⭐</span>
@@ -531,7 +531,7 @@ export default function DashboardPage() {
                       style={{
                         width: `${Math.min(
                           (userStats.totalTipsViewed / 10) * 100,
-                          100
+                          100,
                         )}%`,
                       }}
                     />

@@ -247,9 +247,9 @@ export default function EarningsPage() {
                     <Link href="/tips">
                       <Button>View Tips</Button>
                     </Link>
-                    <Link href="/referral">
+                    {/* <Link href="/referral">
                       <Button variant="outline">Refer Friends</Button>
-                    </Link>
+                    </Link> */}
                   </div>
                 </CardContent>
               </Card>

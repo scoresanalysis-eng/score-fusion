@@ -118,36 +118,36 @@ export default function VIPAreaPage() {
     () =>
       vipPredictions.slice(
         (currentPagePredictions - 1) * itemsPerPage,
-        currentPagePredictions * itemsPerPage
+        currentPagePredictions * itemsPerPage,
       ),
-    [vipPredictions, currentPagePredictions]
+    [vipPredictions, currentPagePredictions],
   );
 
   const displayedVipUpdates = useMemo(
     () =>
       vipUpdates.slice(
         (currentPageUpdates - 1) * itemsPerPage,
-        currentPageUpdates * itemsPerPage
+        currentPageUpdates * itemsPerPage,
       ),
-    [vipUpdates, currentPageUpdates]
+    [vipUpdates, currentPageUpdates],
   );
 
   const displayedHistoryPredictions = useMemo(
     () =>
       historyPredictions.slice(
         (currentPageHistoryPredictions - 1) * itemsPerPage,
-        currentPageHistoryPredictions * itemsPerPage
+        currentPageHistoryPredictions * itemsPerPage,
       ),
-    [historyPredictions, currentPageHistoryPredictions]
+    [historyPredictions, currentPageHistoryPredictions],
   );
 
   const displayedHistoryUpdates = useMemo(
     () =>
       historyUpdates.slice(
         (currentPageHistoryUpdates - 1) * itemsPerPage,
-        currentPageHistoryUpdates * itemsPerPage
+        currentPageHistoryUpdates * itemsPerPage,
       ),
-    [historyUpdates, currentPageHistoryUpdates]
+    [historyUpdates, currentPageHistoryUpdates],
   );
   const checkVIPAccess = useCallback(async () => {
     console.log("🔍 [VIP Page] Starting VIP access check...");
@@ -182,18 +182,18 @@ export default function VIPAreaPage() {
         });
 
         if (data.hasAccess) {
-          console.log("✅ [VIP Page] VIP ACCESS GRANTED!");
+          // console.log("✅ [VIP Page] VIP ACCESS GRANTED!");
         } else {
-          console.log("❌ [VIP Page] VIP ACCESS DENIED");
+          // console.log("❌ [VIP Page] VIP ACCESS DENIED");
         }
       } else {
-        console.log("❌ [VIP Page] API call failed:", res.error);
+        // console.log("❌ [VIP Page] API call failed:", res.error);
       }
     } catch (error) {
-      console.error("❌ [VIP Page] Error checking VIP access:", error);
+      // console.error("❌ [VIP Page] Error checking VIP access:", error);
     } finally {
       setLoading(false);
-      console.log("🔍 [VIP Page] VIP access check complete.");
+      // console.log("🔍 [VIP Page] VIP access check complete.");
     }
   }, [api, user]);
 
@@ -319,12 +319,12 @@ export default function VIPAreaPage() {
               redeemData && redeemData.remainingUses !== undefined
                 ? {
                     expiresAt: String(
-                      redeemData.expiresAt ?? new Date().toISOString()
+                      redeemData.expiresAt ?? new Date().toISOString(),
                     ),
                     remaining: Number(redeemData.remainingUses ?? 0),
                     type: String(redeemData.type ?? "general"),
                   }
-                : prev?.tokenAccess ?? null,
+                : (prev?.tokenAccess ?? null),
           }));
         }
 
@@ -352,9 +352,9 @@ export default function VIPAreaPage() {
   }
 
   if (!hasVIPAccess) {
-    console.log(
-      "🚫 [VIP Page] Rendering ACCESS DENIED state (hasVIPAccess is false)"
-    );
+    // console.log(
+    //   "🚫 [VIP Page] Rendering ACCESS DENIED state (hasVIPAccess is false)",
+    // );
     return (
       <div className="min-h-screen bg-background">
         <div className="container mx-auto px-4 py-8 md:py-12">
@@ -494,7 +494,7 @@ export default function VIPAreaPage() {
                             e.target.value
                               .toUpperCase()
                               .replace(/[^A-Z0-9]/gi, "")
-                              .slice(0, 7)
+                              .slice(0, 7),
                           )
                         }
                         className="text-center font-mono h-11 md:h-10 text-base"
@@ -515,7 +515,7 @@ export default function VIPAreaPage() {
                             : ""}{" "}
                           remaining — expires{" "}
                           {new Date(
-                            entitlements.tokenAccess.expiresAt
+                            entitlements.tokenAccess.expiresAt,
                           ).toLocaleDateString()}
                         </p>
                       )}
@@ -551,7 +551,7 @@ export default function VIPAreaPage() {
   }
 
   // VIP content (shown when user has access)
-  console.log("✅ [VIP Page] Rendering VIP CONTENT (hasVIPAccess is TRUE)");
+  // console.log("✅ [VIP Page] Rendering VIP CONTENT (hasVIPAccess is TRUE)");
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
@@ -698,7 +698,7 @@ export default function VIPAreaPage() {
                             <Calendar className="h-2.5 w-2.5 md:h-3 md:w-3 shrink-0" />
                             <span className="truncate">
                               {new Date(
-                                prediction.matchDate || prediction.createdAt
+                                prediction.matchDate || prediction.createdAt,
                               ).toLocaleString("en-NG", {
                                 year: "numeric",
                                 timeZone: "UTC",
@@ -758,7 +758,7 @@ export default function VIPAreaPage() {
                       size="sm"
                       onClick={() =>
                         setCurrentPagePredictions(
-                          Math.max(1, currentPagePredictions - 1)
+                          Math.max(1, currentPagePredictions - 1),
                         )
                       }
                       disabled={currentPagePredictions === 1}
@@ -776,8 +776,8 @@ export default function VIPAreaPage() {
                         setCurrentPagePredictions(
                           Math.min(
                             Math.ceil(vipPredictions.length / itemsPerPage),
-                            currentPagePredictions + 1
-                          )
+                            currentPagePredictions + 1,
+                          ),
                         )
                       }
                       disabled={
@@ -908,8 +908,8 @@ export default function VIPAreaPage() {
                                   update.result === "won"
                                     ? "text-emerald-600 dark:text-emerald-400"
                                     : update.result === "lost"
-                                    ? "text-red-500"
-                                    : ""
+                                      ? "text-red-500"
+                                      : ""
                                 }`}
                               >
                                 {update.result}
@@ -947,7 +947,7 @@ export default function VIPAreaPage() {
                             <Calendar className="h-2.5 w-2.5 md:h-3 md:w-3 shrink-0" />
                             <span className="truncate">
                               {new Date(
-                                update.matchDate || update.createdAt
+                                update.matchDate || update.createdAt,
                               ).toLocaleString("en-NG", {
                                 weekday: "short",
                                 month: "short",
@@ -1008,7 +1008,7 @@ export default function VIPAreaPage() {
                       size="sm"
                       onClick={() =>
                         setCurrentPageUpdates(
-                          Math.max(1, currentPageUpdates - 1)
+                          Math.max(1, currentPageUpdates - 1),
                         )
                       }
                       disabled={currentPageUpdates === 1}
@@ -1026,8 +1026,8 @@ export default function VIPAreaPage() {
                         setCurrentPageUpdates(
                           Math.min(
                             Math.ceil(vipUpdates.length / itemsPerPage),
-                            currentPageUpdates + 1
-                          )
+                            currentPageUpdates + 1,
+                          ),
                         )
                       }
                       disabled={
@@ -1077,8 +1077,8 @@ export default function VIPAreaPage() {
                           prediction.result === "won"
                             ? "border-emerald-500"
                             : prediction.result === "lost"
-                            ? "border-red-500"
-                            : "border-border"
+                              ? "border-red-500"
+                              : "border-border"
                         }`}
                       >
                         <CardContent className="p-4">
@@ -1158,8 +1158,8 @@ export default function VIPAreaPage() {
                                     prediction.result === "won"
                                       ? "text-emerald-600 dark:text-emerald-400"
                                       : prediction.result === "lost"
-                                      ? "text-red-500"
-                                      : ""
+                                        ? "text-red-500"
+                                        : ""
                                   }`}
                                 >
                                   {prediction.result}
@@ -1172,7 +1172,7 @@ export default function VIPAreaPage() {
                               <Calendar className="h-2.5 w-2.5 md:h-3 md:w-3 shrink-0" />
                               <span className="truncate">
                                 {new Date(
-                                  prediction.matchDate || prediction.createdAt
+                                  prediction.matchDate || prediction.createdAt,
                                 ).toLocaleString("en-NG", {
                                   weekday: "short",
                                   month: "short",
@@ -1208,7 +1208,7 @@ export default function VIPAreaPage() {
                                   </span>
                                   <span className="font-medium">
                                     {new Date(
-                                      prediction.tipResult.settledAt
+                                      prediction.tipResult.settledAt,
                                     ).toLocaleString()}
                                   </span>
                                 </div>
@@ -1269,7 +1269,7 @@ export default function VIPAreaPage() {
                         size="sm"
                         onClick={() =>
                           setCurrentPageHistoryPredictions(
-                            Math.max(1, currentPageHistoryPredictions - 1)
+                            Math.max(1, currentPageHistoryPredictions - 1),
                           )
                         }
                         disabled={currentPageHistoryPredictions === 1}
@@ -1287,10 +1287,10 @@ export default function VIPAreaPage() {
                           setCurrentPageHistoryPredictions(
                             Math.min(
                               Math.ceil(
-                                historyPredictions.length / itemsPerPage
+                                historyPredictions.length / itemsPerPage,
                               ),
-                              currentPageHistoryPredictions + 1
-                            )
+                              currentPageHistoryPredictions + 1,
+                            ),
                           )
                         }
                         disabled={
@@ -1315,8 +1315,8 @@ export default function VIPAreaPage() {
                           update.result === "won"
                             ? "border-emerald-500"
                             : update.result === "lost"
-                            ? "border-red-500"
-                            : "border-border"
+                              ? "border-red-500"
+                              : "border-border"
                         }`}
                       >
                         <CardContent className="p-4">
@@ -1360,8 +1360,8 @@ export default function VIPAreaPage() {
                                 update.result === "won"
                                   ? "text-emerald-700 dark:text-emerald-400"
                                   : update.result === "lost"
-                                  ? "text-red-500 dark:text-red-400"
-                                  : "text-primary"
+                                    ? "text-red-500 dark:text-red-400"
+                                    : "text-primary"
                               }`}
                             >
                               {update.matchResult}
@@ -1398,8 +1398,8 @@ export default function VIPAreaPage() {
                                     update.result === "won"
                                       ? "text-emerald-600 dark:text-emerald-400"
                                       : update.result === "lost"
-                                      ? "text-red-500"
-                                      : ""
+                                        ? "text-red-500"
+                                        : ""
                                   }`}
                                 >
                                   {update.result}
@@ -1412,7 +1412,7 @@ export default function VIPAreaPage() {
                               <Calendar className="h-2.5 w-2.5 md:h-3 md:w-3 shrink-0" />
                               <span className="truncate">
                                 {new Date(
-                                  update.matchDate || update.createdAt
+                                  update.matchDate || update.createdAt,
                                 ).toLocaleString("en-NG", {
                                   year: "numeric",
                                   month: "short",
@@ -1446,7 +1446,7 @@ export default function VIPAreaPage() {
                                   </span>
                                   <span className="font-medium">
                                     {new Date(
-                                      update.tipResult.settledAt
+                                      update.tipResult.settledAt,
                                     ).toLocaleString()}
                                   </span>
                                 </div>
@@ -1499,7 +1499,7 @@ export default function VIPAreaPage() {
                         size="sm"
                         onClick={() =>
                           setCurrentPageHistoryUpdates(
-                            Math.max(1, currentPageHistoryUpdates - 1)
+                            Math.max(1, currentPageHistoryUpdates - 1),
                           )
                         }
                         disabled={currentPageHistoryUpdates === 1}
@@ -1517,8 +1517,8 @@ export default function VIPAreaPage() {
                           setCurrentPageHistoryUpdates(
                             Math.min(
                               Math.ceil(historyUpdates.length / itemsPerPage),
-                              currentPageHistoryUpdates + 1
-                            )
+                              currentPageHistoryUpdates + 1,
+                            ),
                           )
                         }
                         disabled={

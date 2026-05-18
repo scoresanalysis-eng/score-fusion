@@ -41,9 +41,9 @@ function Footer() {
                   </Link>
                 </li>
                 <li>
-                  <Link href="/referral" className="hover:text-primary">
+                  {/* <Link href="/referral" className="hover:text-primary">
                     Referrals
-                  </Link>
+                  </Link> */}
                 </li>
               </ul>
             </div>

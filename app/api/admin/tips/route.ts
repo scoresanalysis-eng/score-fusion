@@ -52,10 +52,12 @@ const tipSchema = z.object({
 // Query schema
 const tipsQuerySchema = z.object({
   page: z.string().transform(Number).default("1"),
-  limit: z.string().transform(Number).default("20000000000000000"),
+  limit: z.string().transform(Number).default("100"),
   search: z.string().optional(),
   sport: z.string().optional(),
   status: z.enum(["draft", "scheduled", "published", "archived"]).optional(),
+  category: z.enum(["tip", "update"]).optional(),
+  result: z.enum(["won", "lost", "void", "pending"]).optional(),
   isVIP: z
     .string()
     .transform((val) => val === "true")
@@ -100,6 +102,14 @@ export async function GET(request: NextRequest) {
 
     if (validatedQuery.status) {
       where.status = validatedQuery.status;
+    }
+
+    if (validatedQuery.category) {
+      where.category = validatedQuery.category;
+    }
+
+    if (validatedQuery.result) {
+      where.result = validatedQuery.result;
     }
 
     if (validatedQuery.isVIP !== undefined) {
@@ -280,7 +290,7 @@ export async function GET(request: NextRequest) {
           betWinRate: calculateWinRate(normalizedBets),
           totalStaked: normalizedBets.reduce(
             (sum: number, bet: BetSnapshot): number => sum + bet.amount,
-            0
+            0,
           ),
         };
 
@@ -306,7 +316,7 @@ export async function GET(request: NextRequest) {
           publishAt: tip.publishAt?.toISOString() || null,
           matchDate: tip.matchDate?.toISOString() || null,
         };
-      }
+      },
     );
 
     return NextResponse.json({
@@ -328,13 +338,13 @@ export async function GET(request: NextRequest) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { success: false, error: error.errors[0].message },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     return NextResponse.json(
       { success: false, error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -411,7 +421,7 @@ export async function POST(request: NextRequest) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { success: false, error: error.errors[0].message },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -420,7 +430,7 @@ export async function POST(request: NextRequest) {
         success: false,
         error: error instanceof Error ? error.message : "Internal server error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -437,7 +447,7 @@ export async function PUT(request: NextRequest) {
     if (!tipId) {
       return NextResponse.json(
         { success: false, error: "Tip ID required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -503,7 +513,7 @@ export async function PUT(request: NextRequest) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { success: false, error: error.errors[0].message },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -512,7 +522,7 @@ export async function PUT(request: NextRequest) {
         success: false,
         error: error instanceof Error ? error.message : "Internal server error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -529,7 +539,7 @@ export async function DELETE(request: NextRequest) {
     if (!tipId) {
       return NextResponse.json(
         { success: false, error: "Tip ID required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -541,7 +551,7 @@ export async function DELETE(request: NextRequest) {
     if (betCount > 0) {
       return NextResponse.json(
         { success: false, error: "Cannot delete tip with associated bets" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -553,7 +563,7 @@ export async function DELETE(request: NextRequest) {
     if (!tip) {
       return NextResponse.json(
         { success: false, error: "Tip not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -585,7 +595,7 @@ export async function DELETE(request: NextRequest) {
     console.error("Admin tips DELETE error:", error);
     return NextResponse.json(
       { success: false, error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

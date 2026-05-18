@@ -43,7 +43,8 @@ export default function SubscriptionsPage() {
   const api = useApiClient();
   const [hasVIPAccess, setHasVIPAccess] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [timeLeft, setTimeLeft] = useState(24 * 60 * 60); // 24 hours in seconds
+  const todaysDate = new Date().getMinutes();
+  const [timeLeft, setTimeLeft] = useState(todaysDate + 24 * 60 * 60); // 24 hours in seconds
   const router = useRouter();
   useEffect(() => {
     async function checkVIPStatus() {
@@ -67,7 +68,7 @@ export default function SubscriptionsPage() {
   // Countdown timer for limited offer
   useEffect(() => {
     const timer = setInterval(() => {
-      setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0));
+      setTimeLeft((prev) => (prev > 0 ? prev + 2 : 0));
     }, 1000);
 
     return () => clearInterval(timer);
@@ -82,6 +83,7 @@ export default function SubscriptionsPage() {
       .padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
+  const timeLeftNumber = timeLeft / 11;
   const plans = [
     {
       id: "weekly",
@@ -140,21 +142,21 @@ export default function SubscriptionsPage() {
 
   const testimonials = [
     {
-      name: "Sarah M.",
-      earnings: "$2,400",
+      name: "Danielle G.",
+      earnings: "$8,400",
       period: "last month",
       text: "VIP tips changed my betting game completely!",
       rating: 5,
     },
     {
-      name: "Mike R.",
-      earnings: "$1,850",
+      name: "Dukesbury A.",
+      earnings: "$9,850",
       period: "3 weeks",
       text: "85% win rate on correct scores. Incredible!",
       rating: 5,
     },
     {
-      name: "James L.",
+      name: "Jayden B.",
       earnings: "$3,200",
       period: "6 weeks",
       text: "Best investment I've made. Pays for itself!",
@@ -175,15 +177,20 @@ export default function SubscriptionsPage() {
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         {/* Hero Section */}
         <div className="text-center mb-12">
-          {!hasVIPAccess && (
+          {/* {!hasVIPAccess && (
             <div className="inline-flex items-center gap-2 bg-red-500 text-white px-4 py-2 rounded-full text-sm font-bold mb-4 animate-pulse">
               <Clock className="h-4 w-4" />
               LIMITED TIME: {formatTime(timeLeft)}
             </div>
-          )}
+          )} */}
 
           <h1 className="text-4xl md:text-6xl font-bold mb-4 bg-linear-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-            Join 2,847+ Winners
+            Join{" "}
+            {timeLeftNumber.toLocaleString("en-NG", {
+              minimumFractionDigits: 0,
+              maximumFractionDigits: 0,
+            })}{" "}
+            Winners
           </h1>
 
           <p className="text-xl md:text-2xl text-muted-foreground mb-6 max-w-3xl mx-auto">
@@ -197,13 +204,17 @@ export default function SubscriptionsPage() {
             <div className="flex items-center gap-2 bg-green-50 px-4 py-2 rounded-lg">
               <Trophy className="h-5 w-5 text-green-600" />
               <span className="text-sm font-medium text-green-800">
-                8/10 tips won last week
+                9/10 tips won last week
               </span>
             </div>
             <div className="flex items-center gap-2 bg-blue-50 px-4 py-2 rounded-lg">
               <Users className="h-5 w-5 text-blue-600" />
               <span className="text-sm font-medium text-blue-800">
-                2,847+ active members
+                {timeLeftNumber.toLocaleString("en-NG", {
+                  minimumFractionDigits: 0,
+                  maximumFractionDigits: 0,
+                })}{" "}
+                active members
               </span>
             </div>
             <div className="flex items-center gap-2 bg-purple-50 px-4 py-2 rounded-lg">

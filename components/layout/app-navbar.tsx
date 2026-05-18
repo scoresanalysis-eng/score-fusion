@@ -29,7 +29,7 @@ import {
   Crown,
 } from "lucide-react";
 import { Icon } from "@/components/logo";
-import { NotificationSystem } from "@/components/notification-system";
+// import { NotificationSystem } from "@/components/notification-system";
 import { useApiClient } from "@/lib/api-client";
 import { ThemeToggle } from "@/components/theme-toggle";
 
@@ -134,9 +134,9 @@ export function AppNavbar() {
           {/* Right side - Auth & Mobile Menu */}
           <div className="flex items-center gap-2">
             {/* Notifications for logged in users */}
-            {user && !user.guest && (
+            {/* {user && !user.guest && (
               <NotificationSystem user={user} isVIP={isVIP} />
-            )}
+            )} */}
             <ThemeToggle />
             {/* Desktop Auth */}
             <div className="hidden md:flex items-center gap-2">

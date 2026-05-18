@@ -162,7 +162,7 @@ export default function Home() {
       try {
         // Fetch live matches
         const matchesResponse = await fetch(
-          "/api/livescores/matches?status=live&limit=3"
+          "/api/livescores/matches?status=live&limit=3",
         );
         if (matchesResponse.ok) {
           const matchesData = await matchesResponse.json();
@@ -173,7 +173,7 @@ export default function Home() {
 
         // Fetch featured tips
         const tipsResponse = await fetch(
-          "/api/predictions?featured=true&limit=3"
+          "/api/predictions?featured=true&limit=3",
         );
         if (tipsResponse.ok) {
           const tipsData = await tipsResponse.json();
@@ -182,7 +182,7 @@ export default function Home() {
           }
         }
         const predictionsResponse = await api.get<PredictionsData>(
-          "/predictions?vip=false&limit=3&today=true"
+          "/predictions?vip=false&limit=3&today=true",
         );
         // Fetch predictions (free tips)
         // const predictionsResponse = await fetch(
@@ -190,7 +190,7 @@ export default function Home() {
         // );
         if (predictionsResponse.success && predictionsResponse.data) {
           const freePredictions = predictionsResponse.data.predictions.filter(
-            (tip: Tip) => !tip.isVIP
+            (tip: Tip) => !tip.isVIP,
           );
           setPredictions(freePredictions.slice(0, 5));
         }
@@ -199,21 +199,21 @@ export default function Home() {
         setReviews([
           {
             id: "1",
-            author: "John D.",
+            author: "Danielle G.",
             content: "Amazing tips! Won 5/6 this week.",
             rating: 5,
             date: "Nov 10, 2025",
           },
           {
             id: "2",
-            author: "Sarah K.",
+            author: "Dukesbury A.",
             content: "Live scores are spot on. Great app!",
             rating: 4,
             date: "Nov 8, 2025",
           },
           {
             id: "3",
-            author: "Mike R.",
+            author: "Jayden B.",
             content: "VIP predictions are worth every penny.",
             rating: 5,
             date: "Nov 5, 2025",
@@ -559,7 +559,7 @@ export default function Home() {
                                     hour: "2-digit",
                                     minute: "2-digit",
                                     hour12: false,
-                                  }
+                                  },
                                 )}
                               </span>
                             )}
@@ -679,7 +679,7 @@ export default function Home() {
                             year: "numeric",
                             month: "short",
                             day: "numeric",
-                          }
+                          },
                         )}
                       </span>
                     </div>
@@ -1067,7 +1067,7 @@ export default function Home() {
                   </ul>
                 </div>
 
-                <div className="bg-secondary rounded-lg p-3 md:p-4">
+                {/* <div className="bg-secondary rounded-lg p-3 md:p-4">
                   <div className="flex items-center gap-3">
                     <div className="flex -space-x-2">
                       <div className="h-8 w-8 md:h-10 md:w-10 rounded-full bg-primary/20 border-2 border-background flex items-center justify-center text-xs md:text-sm font-bold">
@@ -1083,7 +1083,7 @@ export default function Home() {
                       </div>
                     </div>
                   </div>
-                </div>
+                </div> */}
               </div>
             </div>
           </div>

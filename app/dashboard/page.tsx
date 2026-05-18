@@ -115,7 +115,7 @@ export default function DashboardPage() {
 
         // Fetch predictions - VIP if user has access, otherwise free
         const predictionsRes = await api.get(
-          `/predictions?vip=false&limit=3&today=true`
+          `/predictions?vip=false&limit=3&today=true`,
         );
 
         if (predictionsRes.success) {
@@ -126,7 +126,7 @@ export default function DashboardPage() {
         } else if (vipStatus && !user?.guest) {
           // If VIP predictions fail, fallback to free predictions
           const freeRes = await api.get(
-            "/predictions?vip=false&limit=3&today=true"
+            "/predictions?vip=false&limit=3&today=true",
           );
           if (freeRes.success) {
             const freeData = freeRes.data as { predictions: Prediction[] };
@@ -136,7 +136,7 @@ export default function DashboardPage() {
 
         // Fetch live matches
         const matchesRes = await api.get(
-          "/livescores/matches?status=live&limit=5"
+          "/livescores/matches?status=live&limit=5",
         );
         if (matchesRes.success) {
           const matchesData = matchesRes.data as { matches: Match[] };
@@ -177,7 +177,7 @@ export default function DashboardPage() {
         }
 
         setDerivedWinRate(
-          winRateCandidate && winRateCandidate > 0 ? winRateCandidate : null
+          winRateCandidate && winRateCandidate > 0 ? winRateCandidate : null,
         );
 
         // Fetch banner carousel
@@ -343,7 +343,7 @@ export default function DashboardPage() {
                                   hour: "2-digit",
                                   minute: "2-digit",
                                   hour12: false,
-                                }
+                                },
                               )}
                             </span>
                           )}
@@ -398,7 +398,7 @@ export default function DashboardPage() {
               <UserEngagement user={user} userStats={userStats} isVIP={isVIP} />
             )}
             {/* Enhanced VIP Access Card with Social Proof */}
-            {!isVIP && (
+            {/* {!isVIP && (
               <Card className="border-primary relative overflow-hidden">
                 <div className="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full animate-pulse">
                   Limited Time
@@ -448,7 +448,7 @@ export default function DashboardPage() {
                   </p>
                 </CardContent>
               </Card>
-            )}
+            )} */}
 
             {/* Welcome Tooltip for New Users */}
             {showWelcomeTooltip && (
@@ -519,7 +519,7 @@ export default function DashboardPage() {
             </Card>
 
             {/* Dynamic Pro Tips & Success Stories */}
-            <Card className="bg-linear-to-br from-primary/5 to-primary/10 border-primary">
+            {/* <Card className="bg-linear-to-br from-primary/5 to-primary/10 border-primary">
               <CardContent className="p-3 sm:p-4">
                 <div className="flex items-start gap-2 mb-2">
                   <span className="text-lg">🏆</span>
@@ -528,14 +528,14 @@ export default function DashboardPage() {
                   </h3>
                 </div>
                 <p className="text-[10px] sm:text-xs text-muted-foreground mb-2">
-                  "Made $2,400 last month following VIP tips!" - Sarah M.
+                  "Made $7,400 last month following VIP tips!" - Danielle
                 </p>
                 <div className="flex items-center gap-1 text-[10px] ">
                   <span>⭐⭐⭐⭐⭐</span>
                   <span className="font-medium">Verified Winner</span>
                 </div>
               </CardContent>
-            </Card>
+            </Card> */}
 
             {/* Progress Tracker for Engagement */}
             {user && !user.guest && (
@@ -555,7 +555,7 @@ export default function DashboardPage() {
                       style={{
                         width: `${Math.min(
                           (userStats.totalTipsViewed / 10) * 100,
-                          100
+                          100,
                         )}%`,
                       }}
                     />
@@ -612,7 +612,7 @@ export default function DashboardPage() {
                 onClick={() => {
                   window.open(
                     "https://apps.apple.com/app/scorefusion/id1234567890",
-                    "_blank"
+                    "_blank",
                   );
                   setShowAppDialog(false);
                 }}
@@ -626,7 +626,7 @@ export default function DashboardPage() {
                 onClick={() => {
                   window.open(
                     "https://play.google.com/store/apps/details?id=com.yourcompany.scorefusion", // **<-- Update with actual Play Store link**
-                    "_blank"
+                    "_blank",
                   );
                   setShowAppDialog(false);
                 }}
