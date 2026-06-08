@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { User, Lock, Eye, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { signOut } from "next-auth/react";
 import { useEffect, useState } from "react";
 
 export default function ProfilePage() {
@@ -22,6 +23,9 @@ export default function ProfilePage() {
     new: false,
     confirm: false,
   });
+  const [deletePassword, setDeletePassword] = useState("");
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [passwordError, setPasswordError] = useState("");
   const [passwordSuccess, setPasswordSuccess] = useState("");
@@ -75,7 +79,7 @@ export default function ProfilePage() {
       });
     } catch (error) {
       setPasswordError(
-        error instanceof Error ? error.message : "Failed to change password"
+        error instanceof Error ? error.message : "Failed to change password",
       );
     } finally {
       setIsChangingPassword(false);
@@ -87,6 +91,50 @@ export default function ProfilePage() {
       ...prev,
       [field]: !prev[field],
     }));
+  };
+
+  const handleDeleteAccount = async () => {
+    setDeleteError("");
+
+    if (!deletePassword.trim()) {
+      setDeleteError("Enter your current password to delete the account");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "Delete this account permanently? This action cannot be undone.",
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setIsDeletingAccount(true);
+
+    try {
+      const response = await fetch("/api/users/delete", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ currentPassword: deletePassword }),
+        credentials: "include",
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error?.message || "Failed to delete account");
+      }
+
+      await signOut({ callbackUrl: "/login?deleted=1" });
+    } catch (error) {
+      setDeleteError(
+        error instanceof Error ? error.message : "Failed to delete account",
+      );
+    } finally {
+      setIsDeletingAccount(false);
+    }
   };
 
   if (isLoading) {
@@ -306,10 +354,31 @@ export default function ProfilePage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <p className="text-sm text-muted-foreground">
-                  Once you delete your account, there is no going back. Please
-                  be certain.
+                  This permanently deletes your account, clears your profile
+                  data, and signs you out everywhere.
                 </p>
-                <Button variant="destructive">Delete Account</Button>
+                {deleteError && (
+                  <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+                    {deleteError}
+                  </div>
+                )}
+                <div className="space-y-2">
+                  <Label htmlFor="deletePassword">Current Password</Label>
+                  <Input
+                    id="deletePassword"
+                    type="password"
+                    value={deletePassword}
+                    onChange={(e) => setDeletePassword(e.target.value)}
+                    placeholder="Enter your current password"
+                  />
+                </div>
+                <Button
+                  variant="destructive"
+                  onClick={handleDeleteAccount}
+                  disabled={isDeletingAccount}
+                >
+                  {isDeletingAccount ? "Deleting..." : "Delete Account"}
+                </Button>
               </CardContent>
             </Card>
           </div>
