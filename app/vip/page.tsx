@@ -13,6 +13,7 @@ import {
   Star,
   Target,
   TrendingUp,
+  Phone,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -337,7 +338,7 @@ export default function VIPAreaPage() {
                   </div>
                 </div>
 
-                {user && (
+                {/* {user && (
                   <div className="bg-secondary p-4 md:p-6 space-y-4">
                     <div className="flex justify-between items-center gap-3">
                       <h3 className="font-bold text-base md:text-lg">
@@ -393,13 +394,13 @@ export default function VIPAreaPage() {
                       </div>
                     </div>
                   </div>
-                )}
+                )} */}
 
                 {!user && (
                   <Card className="border-2 border-primary">
                     <CardContent className="p-4 md:p-6 text-center">
                       <h3 className="font-bold text-base md:text-lg mb-2">
-                        Sign up or log in to subscribe
+                        Sign up or log in to access VIP features
                       </h3>
                       <p className="text-sm md:text-base text-muted-foreground mb-4">
                         Create an account to access VIP features
@@ -444,7 +445,9 @@ export default function VIPAreaPage() {
                         <p className="text-xs md:text-sm text-muted-foreground mt-2 text-center">
                           You have {entitlements.tokenAccess.remaining} token
                           use
-                          {entitlements.tokenAccess.remaining !== 1 ? "s" : ""}{" "}
+                          {entitlements.tokenAccess.remaining !== 1
+                            ? "s"
+                            : ""}{" "}
                           remaining — expires{" "}
                           {new Date(
                             entitlements.tokenAccess.expiresAt,
@@ -452,23 +455,35 @@ export default function VIPAreaPage() {
                         </p>
                       )}
                     </div>
-                    <Button
-                      type="submit"
-                      className="w-full h-10 text-sm md:text-base"
-                      disabled={redeeming}
-                    >
-                      {redeeming ? (
-                        <>
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Redeeming...
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle className="h-4 w-4 mr-2" />
-                          Redeem Token
-                        </>
-                      )}
-                    </Button>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <Button
+                        type="submit"
+                        className="w-full h-10 text-sm md:text-base"
+                        disabled={redeeming}
+                      >
+                        {redeeming ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Redeeming...
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle className="h-4 w-4 mr-2" />
+                            Redeem Token
+                          </>
+                        )}
+                      </Button>
+                      <p className="text-xs md:text-sm text-muted-foreground flex items-center justify-center gap-1 mt-6">
+                        Need a token?{" "}
+                        <Link
+                          href="/contact"
+                          className="text-primary hover:underline flex items-center gap-1"
+                        >
+                          Contact us
+                          <Phone className="h-3 w-3" />
+                        </Link>
+                      </p>
+                    </div>
                   </form>
                   <p className="text-xs text-muted-foreground text-center mt-4">
                     Tokens provide instant VIP access without subscription

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -8,8 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { MessageCircle, Send } from "lucide-react";
+import { MessageCircle, X, Trash2 } from "lucide-react";
 
 interface FollowUsDialogProps {
   open: boolean;
@@ -121,19 +120,220 @@ export function FollowUsDialog({ open, onOpenChange }: FollowUsDialogProps) {
 }
 
 export function FollowUsFloatingButton() {
-  const [open, setOpen] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isOverBasket, setIsOverBasket] = useState(false);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [hasBeenMoved, setHasBeenMoved] = useState(false);
+
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const basketRef = useRef<HTMLDivElement>(null);
+  const dragStart = useRef({ mouseX: 0, mouseY: 0, btnX: 0, btnY: 0 });
+  const dragMoved = useRef(false);
+
+  // Initialize position (bottom-right anchor via CSS; offset from there via transform)
+  // We track delta from initial bottom-right position
+  const [pos, setPos] = useState({ x: 0, y: 0 });
+
+  const getButtonRect = () => buttonRef.current?.getBoundingClientRect();
+  const getBasketRect = () => basketRef.current?.getBoundingClientRect();
+
+  const checkOverBasket = useCallback((clientX: number, clientY: number) => {
+    const basket = getBasketRect();
+    if (!basket) return false;
+    return (
+      clientX >= basket.left &&
+      clientX <= basket.right &&
+      clientY >= basket.top &&
+      clientY <= basket.bottom
+    );
+  }, []);
+
+  const onMouseDown = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest(".dismiss-x")) return;
+    e.preventDefault();
+    dragMoved.current = false;
+    const btn = getButtonRect()!;
+    dragStart.current = {
+      mouseX: e.clientX,
+      mouseY: e.clientY,
+      btnX: pos.x,
+      btnY: pos.y,
+    };
+    setIsDragging(true);
+  };
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    if ((e.target as HTMLElement).closest(".dismiss-x")) return;
+    const touch = e.touches[0];
+    dragMoved.current = false;
+    dragStart.current = {
+      mouseX: touch.clientX,
+      mouseY: touch.clientY,
+      btnX: pos.x,
+      btnY: pos.y,
+    };
+    setIsDragging(true);
+  };
+
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const onMouseMove = (e: MouseEvent) => {
+      const dx = e.clientX - dragStart.current.mouseX;
+      const dy = e.clientY - dragStart.current.mouseY;
+      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+        dragMoved.current = true;
+        setHasBeenMoved(true);
+      }
+      setPos({
+        x: dragStart.current.btnX + dx,
+        y: dragStart.current.btnY + dy,
+      });
+      setIsOverBasket(checkOverBasket(e.clientX, e.clientY));
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      const touch = e.touches[0];
+      const dx = touch.clientX - dragStart.current.mouseX;
+      const dy = touch.clientY - dragStart.current.mouseY;
+      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+        dragMoved.current = true;
+        setHasBeenMoved(true);
+      }
+      setPos({
+        x: dragStart.current.btnX + dx,
+        y: dragStart.current.btnY + dy,
+      });
+      setIsOverBasket(checkOverBasket(touch.clientX, touch.clientY));
+    };
+
+    const onMouseUp = (e: MouseEvent) => {
+      setIsDragging(false);
+      if (checkOverBasket(e.clientX, e.clientY)) {
+        setDismissed(true);
+      } else if (!dragMoved.current) {
+        setDialogOpen(true);
+      }
+      setIsOverBasket(false);
+    };
+
+    const onTouchEnd = (e: TouchEvent) => {
+      const touch = e.changedTouches[0];
+      setIsDragging(false);
+      if (checkOverBasket(touch.clientX, touch.clientY)) {
+        setDismissed(true);
+      } else if (!dragMoved.current) {
+        setDialogOpen(true);
+      }
+      setIsOverBasket(false);
+    };
+
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+    window.addEventListener("touchmove", onTouchMove, { passive: true });
+    window.addEventListener("touchend", onTouchEnd);
+
+    return () => {
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+      window.removeEventListener("touchmove", onTouchMove);
+      window.removeEventListener("touchend", onTouchEnd);
+    };
+  }, [isDragging, checkOverBasket]);
+
+  if (dismissed) return null;
 
   return (
     <>
-      <button
-        onClick={() => setOpen(true)}
-        className="fixed bottom-24 right-6 h-14 w-14 rounded-full bg-linear-to-r from-green-500 to-blue-500 text-white shadow-lg hover:shadow-xl active:scale-95 transition-all flex items-center justify-center z-40 animate-pulse hover:animate-none"
-        aria-label="Follow us"
+      {/* Trash basket — appears only while dragging */}
+      <div
+        ref={basketRef}
+        style={{
+          position: "fixed",
+          bottom: "1.5rem",
+          left: "50%",
+          transform: `translateX(-50%) scale(${isDragging ? 1 : 0.6})`,
+          opacity: isDragging ? 1 : 0,
+          pointerEvents: isDragging ? "auto" : "none",
+          transition: "opacity 0.2s ease, transform 0.2s ease",
+          zIndex: 50,
+        }}
+        className={`flex flex-col items-center gap-1`}
       >
-        <MessageCircle className="h-6 w-6" />
-      </button>
+        <div
+          className={`flex items-center justify-center w-14 h-14 rounded-full border-2 transition-all duration-150 ${
+            isOverBasket
+              ? "bg-red-500 border-red-400 scale-125 shadow-lg shadow-red-500/40"
+              : "bg-background/80 border-red-400 backdrop-blur-sm"
+          }`}
+        >
+          <Trash2
+            className={`w-6 h-6 transition-colors ${isOverBasket ? "text-white" : "text-red-400"}`}
+          />
+        </div>
+        <span
+          className={`text-xs font-medium transition-colors ${
+            isOverBasket ? "text-red-500" : "text-muted-foreground"
+          }`}
+        >
+          Drop to dismiss
+        </span>
+      </div>
 
-      <FollowUsDialog open={open} onOpenChange={setOpen} />
+      {/* Floating button */}
+      <div
+        style={{
+          position: "fixed",
+          bottom: "6rem",
+          right: "1.5rem",
+          transform: `translate(${pos.x}px, ${pos.y}px)`,
+          zIndex: 40,
+          touchAction: "none",
+          userSelect: "none",
+        }}
+      >
+        <div className="relative">
+          {/* X dismiss button */}
+          <button
+            className="dismiss-x absolute -top-2 -right-2 z-50 w-5 h-5 rounded-full bg-gray-700 hover:bg-red-500 text-white flex items-center justify-center shadow transition-colors"
+            onClick={(e) => {
+              e.stopPropagation();
+              setDismissed(true);
+            }}
+            aria-label="Dismiss"
+          >
+            <X className="w-3 h-3" />
+          </button>
+
+          {/* Main button */}
+          <button
+            ref={buttonRef}
+            onMouseDown={onMouseDown}
+            onTouchStart={onTouchStart}
+            style={{
+              cursor: isDragging ? "grabbing" : "grab",
+              transition: isDragging
+                ? "none"
+                : "box-shadow 0.2s, transform 0.1s",
+              transform: isOverBasket
+                ? "scale(0.85)"
+                : isDragging
+                  ? "scale(1.05)"
+                  : "scale(1)",
+            }}
+            className={`h-14 w-14 rounded-full bg-gradient-to-br from-green-500 to-blue-500 text-white shadow-lg hover:shadow-xl flex items-center justify-center ${
+              !isDragging ? "animate-pulse hover:animate-none" : ""
+            }`}
+            aria-label="Follow us"
+          >
+            <MessageCircle className="h-6 w-6" />
+          </button>
+        </div>
+      </div>
+
+      <FollowUsDialog open={dialogOpen} onOpenChange={setDialogOpen} />
     </>
   );
 }

@@ -199,10 +199,11 @@ export default function TipDetailPage() {
       {/* Header */}
       <section className="border-b border-border bg-secondary">
         <div className="container mx-auto px-3 md:px-4 py-3 md:py-4">
-          <Link href="/tips">
+          <Link href="">
             <Button
               variant="ghost"
               size="sm"
+              onClick={() => router.back()}
               className="mb-2 -ml-2 text-xs md:text-sm"
             >
               <ArrowLeft className="h-3 w-3 md:h-4 md:w-4 mr-1" />
@@ -251,8 +252,8 @@ export default function TipDetailPage() {
                           tip.result === "won"
                             ? "text-emerald-600 dark:text-emerald-400"
                             : tip.result === "lost"
-                            ? "text-red-500"
-                            : ""
+                              ? "text-red-500"
+                              : ""
                         }`}
                       >
                         {tip.result}

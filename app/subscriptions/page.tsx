@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { redirect } from "next/navigation";
 import {
   Crown,
   Check,
@@ -39,6 +40,7 @@ interface VIPStatus {
 }
 
 export default function SubscriptionsPage() {
+  redirect("/contact");
   const { user } = useAuth();
   const api = useApiClient();
   const [hasVIPAccess, setHasVIPAccess] = useState(false);
