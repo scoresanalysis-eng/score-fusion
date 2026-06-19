@@ -1,4 +1,3 @@
- 
 "use client";
 
 import { useState } from "react";
@@ -30,10 +29,11 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+
     setIsLoading(true);
 
     try {
-      await login(email, password);
+      await login(email, password, rememberMe);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
     } finally {

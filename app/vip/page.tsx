@@ -588,7 +588,7 @@ export default function VIPAreaPage() {
           </CardContent>
         </Card>
 
-        <Card className="mb-8">
+        {/* <Card className="mb-8">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Target className="h-5 w-5 text-purple-500" />
@@ -666,7 +666,7 @@ export default function VIPAreaPage() {
               </div>
             )}
           </CardContent>
-        </Card>
+        </Card> */}
 
         {(historyPredictions.length > 0 || historyUpdates.length > 0) && (
           <Card className="mb-8">

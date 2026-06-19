@@ -63,7 +63,7 @@ const authOptions: NextAuthOptions = {
           if (mode === "guest") {
             // Create an ephemeral guest user
             const guestName = `Guest ${Math.floor(
-              1000 + Math.random() * 9000
+              1000 + Math.random() * 9000,
             )}`;
             const user = await prisma.user.create({
               data: {

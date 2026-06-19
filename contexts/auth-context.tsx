@@ -21,7 +21,7 @@ interface AuthContextType {
   login: (
     email: string,
     password: string,
-    rememberMe?: boolean
+    rememberMe?: boolean,
   ) => Promise<void>;
   signup: (data: SignupData) => Promise<void>;
   logout: () => Promise<void>;
@@ -41,6 +41,7 @@ interface SignupData {
     marketing: boolean;
     essential: boolean;
   };
+  turnstileToken?: string;
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -66,12 +67,12 @@ export function useAuth() {
       hasSession: !!session,
       sessionUser: session?.user,
     });
-    
+
     if (status !== "authenticated" || !session?.user) {
       console.log("🔐 [Auth Context] No authenticated user");
       return null;
     }
-    
+
     const u = session.user as unknown as SessionUser;
     const computedUser = {
       id: u.id,
@@ -81,20 +82,24 @@ export function useAuth() {
       guest: u.guest ?? false,
       role: u.role,
     };
-    
+
     console.log("🔐 [Auth Context] Computed user:", computedUser);
     return computedUser;
   }, [session, status]);
 
   const login = useCallback(
-    async (email: string, password: string) => {
+    async (email: string, password: string, rememberMe = false) => {
       const res = await signIn("credentials", {
         redirect: false,
         email,
         password,
+        rememberMe,
       });
       if (!res || res.error) {
-        const message = res?.error || "Login failed";
+        const message =
+          res?.error === "CredentialsSignin"
+            ? "Invalid email or password"
+            : res?.error || "Login failed";
         toast({
           variant: "destructive",
           title: "Login failed",
@@ -119,7 +124,7 @@ export function useAuth() {
         router.push("/dashboard");
       }
     },
-    [router]
+    [router],
   );
 
   const signup = useCallback(
@@ -152,7 +157,7 @@ export function useAuth() {
       // New users are not admins, so always go to dashboard
       router.push("/dashboard");
     },
-    [router]
+    [router],
   );
 
   const guestLogin = useCallback(async () => {

@@ -762,7 +762,7 @@ export default function AdminPredictionsPage() {
               >
                 <option value="all">All Categories</option>
                 <option value="tip">Tips</option>
-                <option value="update">Updates</option>
+                {/* <option value="update">Updates</option> */}
               </select>
             </div>
             <div className="mt-2 text-sm text-muted-foreground">
@@ -1459,7 +1459,7 @@ export default function AdminPredictionsPage() {
                         }
                       >
                         <option value="tip">Tip</option>
-                        <option value="update">VIP Update</option>
+                        {/* <option value="update">VIP Update</option> */}
                       </select>
                     </div>
 

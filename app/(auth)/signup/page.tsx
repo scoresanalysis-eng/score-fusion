@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useEffect, useState, Suspense } from "react";
 import Link from "next/link";
+import Script from "next/script";
 import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { Button } from "@/components/ui/button";
@@ -18,10 +19,19 @@ import {
 import { Icon } from "@/components/logo";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 
+declare global {
+  interface Window {
+    onSignupTurnstileSuccess?: (token: string) => void;
+    onSignupTurnstileExpired?: () => void;
+    onSignupTurnstileError?: () => void;
+  }
+}
+
 function SignupForm() {
   const { signup } = useAuth();
   const searchParams = useSearchParams();
   const referralCode = searchParams.get("ref");
+  const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
   const [formData, setFormData] = useState({
     email: "",
@@ -40,10 +50,43 @@ function SignupForm() {
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState("");
+
+  useEffect(() => {
+    window.onSignupTurnstileSuccess = (token: string) => {
+      setTurnstileToken(token);
+      setError("");
+    };
+
+    window.onSignupTurnstileExpired = () => {
+      setTurnstileToken("");
+    };
+
+    window.onSignupTurnstileError = () => {
+      setTurnstileToken("");
+      setError("Turnstile verification failed. Please try again.");
+    };
+
+    return () => {
+      delete window.onSignupTurnstileSuccess;
+      delete window.onSignupTurnstileExpired;
+      delete window.onSignupTurnstileError;
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+
+    if (!turnstileSiteKey) {
+      setError("Turnstile is not configured. Please contact support.");
+      return;
+    }
+
+    if (!turnstileToken) {
+      setError("Please complete the Turnstile challenge.");
+      return;
+    }
 
     // Validate password
     if (formData.password.length < 6) {
@@ -63,6 +106,7 @@ function SignupForm() {
       await signup({
         ...formData,
         consents,
+        turnstileToken,
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Signup failed");
@@ -230,6 +274,14 @@ function SignupForm() {
               </div>
             )}
 
+            <div
+              className="cf-turnstile"
+              data-sitekey={turnstileSiteKey || ""}
+              data-callback="onSignupTurnstileSuccess"
+              data-expired-callback="onSignupTurnstileExpired"
+              data-error-callback="onSignupTurnstileError"
+            />
+
             <div className="space-y-3 pt-2">
               <div className="flex items-start space-x-2">
                 <input
@@ -318,20 +370,26 @@ function SignupForm() {
 
 export default function SignupPage() {
   return (
-    <Suspense
-      fallback={
-        <div className=" mx-auto flex min-h-screen items-center justify-center px-4 py-8">
-          <Card className="w-full max-w-md">
-            <CardContent className="p-8">
-              <div className="flex items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      }
-    >
-      <SignupForm />
-    </Suspense>
+    <>
+      <Script
+        src="https://challenges.cloudflare.com/turnstile/v0/api.js"
+        strategy="afterInteractive"
+      />
+      <Suspense
+        fallback={
+          <div className=" mx-auto flex min-h-screen items-center justify-center px-4 py-8">
+            <Card className="w-full max-w-md">
+              <CardContent className="p-8">
+                <div className="flex items-center justify-center">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        }
+      >
+        <SignupForm />
+      </Suspense>
+    </>
   );
 }

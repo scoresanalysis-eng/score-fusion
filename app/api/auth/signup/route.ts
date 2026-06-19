@@ -6,6 +6,44 @@ import { rateLimit } from "@/lib/redis";
 import { EmailService } from "@/lib/email";
 import { getClientIp } from "@/lib/utils";
 
+async function verifyTurnstileToken(token: string): Promise<boolean> {
+  const secret = process.env.TURNSTILE_SECRET_KEY;
+  if (!secret) {
+    console.error("TURNSTILE_SECRET_KEY is not configured");
+    return false;
+  }
+
+  try {
+    const response = await fetch(
+      "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          secret,
+          response: token,
+        }),
+      },
+    );
+
+    if (!response.ok) return false;
+
+    const data = (await response.json()) as {
+      success?: boolean;
+      "error-codes"?: string[];
+    };
+
+    if (!data.success && Array.isArray(data["error-codes"])) {
+      console.error("Turnstile verification failed:", data["error-codes"]);
+    }
+
+    return Boolean(data.success);
+  } catch (error) {
+    console.error("Turnstile verification request failed:", error);
+    return false;
+  }
+}
+
 // Validation schema
 const signupSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -26,6 +64,7 @@ const signupSchema = z.object({
       return date;
     }),
   referralCode: z.string().optional(),
+  turnstileToken: z.string().min(1, "Turnstile token is required"),
   consents: z
     .object({
       analytics: z.boolean().default(true),
@@ -42,7 +81,7 @@ export async function POST(request: NextRequest) {
     const rateLimitResult = await rateLimit.check(
       `signup:ip:${ip}`,
       10,
-      900000
+      900000,
     ); // 10 per 15 min
 
     if (!rateLimitResult.allowed) {
@@ -51,7 +90,7 @@ export async function POST(request: NextRequest) {
           success: false,
           error: "Too many signup attempts. Please try again later.",
         },
-        { status: 429 }
+        { status: 429 },
       );
     }
 
@@ -60,6 +99,19 @@ export async function POST(request: NextRequest) {
     // Validate input
     const validatedData = signupSchema.parse(body);
 
+    const turnstileValid = await verifyTurnstileToken(
+      validatedData.turnstileToken,
+    );
+    if (!turnstileValid) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Turnstile verification failed. Please try again.",
+        },
+        { status: 400 },
+      );
+    }
+
     // Basic password validation (minimum 6 characters as per schema)
     if (validatedData.password.length < 6) {
       return NextResponse.json(
@@ -67,7 +119,7 @@ export async function POST(request: NextRequest) {
           success: false,
           error: "Password must be at least 6 characters long",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -79,7 +131,7 @@ export async function POST(request: NextRequest) {
     if (existingUser) {
       return NextResponse.json(
         { success: false, error: "Email already registered" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -93,7 +145,7 @@ export async function POST(request: NextRequest) {
             success: false,
             error: "You must be at least 18 years old to register",
           },
-          { status: 400 }
+          { status: 400 },
         );
       }
     }
@@ -272,13 +324,13 @@ export async function POST(request: NextRequest) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { success: false, error: error.errors[0].message },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     return NextResponse.json(
       { success: false, error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
