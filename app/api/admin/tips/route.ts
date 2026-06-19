@@ -5,13 +5,13 @@ import { requireAdmin } from "@/lib/session";
 
 // Tip creation/update schema
 const tipSchema = z.object({
-  title: z.string().min(5, "Title must be at least 5 characters"),
+  title: z.string().trim().min(5, "Title must be at least 5 characters"),
   content: z.string().optional(),
   summary: z.string().optional(),
   odds: z.number().positive("Odds must be positive").optional(),
   oddsSource: z.enum(["manual", "api_auto"]).default("manual"),
-  sport: z.string().min(1, "Sport is required"),
-  league: z.string().optional(),
+  sport: z.string().trim().min(1, "Sport is required"),
+  league: z.string().trim().optional(),
   matchId: z.string().uuid().optional(),
   matchDate: z.string().optional(),
   // Team relations for predictions
@@ -72,6 +72,10 @@ const tipsQuerySchema = z.object({
     .default("createdAt"),
   sortOrder: z.enum(["asc", "desc"]).default("desc"),
 });
+
+function normalizeText(value: string): string {
+  return value.trim().replace(/\s+/g, " ").toLowerCase();
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -362,6 +366,51 @@ export async function POST(request: NextRequest) {
 
     // Destructure relational fields from validatedData
     const { matchId, homeTeamId, awayTeamId, ...createData } = validatedData;
+    const normalizedTitle = normalizeText(validatedData.title);
+    const normalizedSport = normalizeText(validatedData.sport);
+    const normalizedLeague = validatedData.league?.trim() || null;
+    const authorId = validatedData.authorId || session.user.id;
+
+    const existingTip = await prisma.tip.findFirst({
+      where: {
+        title: {
+          equals: normalizedTitle,
+          mode: "insensitive",
+        },
+        sport: {
+          equals: normalizedSport,
+          mode: "insensitive",
+        },
+        league: normalizedLeague,
+        matchId: matchId ?? null,
+        homeTeamId: homeTeamId ?? null,
+        awayTeamId: awayTeamId ?? null,
+        predictedOutcome: validatedData.predictedOutcome ?? null,
+        category: validatedData.category,
+        odds: validatedData.odds ?? null,
+        isVIP: validatedData.isVIP,
+        featured: validatedData.featured,
+        authorId,
+      },
+      select: {
+        id: true,
+        title: true,
+        sport: true,
+        status: true,
+        publishAt: true,
+      },
+    });
+
+    if (existingTip) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Tip already exists",
+          data: { tip: existingTip },
+        },
+        { status: 409 },
+      );
+    }
 
     // Create tip
     const tip = await prisma.tip.create({
@@ -375,7 +424,7 @@ export async function POST(request: NextRequest) {
         publishAt: validatedData.publishAt
           ? new Date(validatedData.publishAt)
           : new Date(),
-        authorId: validatedData.authorId || session.user.id,
+        authorId,
         authorName: validatedData.authorName || session.user.displayName,
         ...(matchId && { match: { connect: { id: matchId } } }),
         ...(homeTeamId && { homeTeam: { connect: { id: homeTeamId } } }),
