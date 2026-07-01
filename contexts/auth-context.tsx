@@ -41,7 +41,12 @@ interface SignupData {
     marketing: boolean;
     essential: boolean;
   };
-  turnstileToken?: string;
+  botGuard: {
+    website?: string;
+    company?: string;
+    phone?: string;
+    formStartedAt: number;
+  };
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {

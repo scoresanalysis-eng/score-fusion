@@ -5,55 +5,11 @@ import { prisma } from "@/lib/db";
 import { rateLimit } from "@/lib/redis";
 import { EmailService } from "@/lib/email";
 import { getClientIp } from "@/lib/utils";
+import {
+  botGuardFailureMessage,
+  validateSignupBotGuard,
+} from "@/lib/signup-bot-guard";
 
-async function verifyTurnstileToken(
-  token: string,
-  remoteIp?: string,
-): Promise<boolean> {
-  const secret = process.env.TURNSTILE_SECRET_KEY;
-  if (!secret) {
-    console.error("TURNSTILE_SECRET_KEY is not configured");
-    return false;
-  }
-
-  try {
-    const params = new URLSearchParams({
-      secret,
-      response: token,
-    });
-
-    if (remoteIp) {
-      params.set("remoteip", remoteIp);
-    }
-
-    const response = await fetch(
-      "https://challenges.cloudflare.com/turnstile/v0/siteverify",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: params,
-      },
-    );
-
-    if (!response.ok) return false;
-
-    const data = (await response.json()) as {
-      success?: boolean;
-      "error-codes"?: string[];
-    };
-
-    if (!data.success && Array.isArray(data["error-codes"])) {
-      console.error("Turnstile verification failed:", data["error-codes"]);
-    }
-
-    return Boolean(data.success);
-  } catch (error) {
-    console.error("Turnstile verification request failed:", error);
-    return false;
-  }
-}
-
-// Validation schema
 const signupSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: z.string().min(6, "Password must be at least 6 characters long"),
@@ -73,7 +29,12 @@ const signupSchema = z.object({
       return date;
     }),
   referralCode: z.string().optional(),
-  turnstileToken: z.string().min(1, "Turnstile token is required"),
+  botGuard: z.object({
+    website: z.string().optional(),
+    company: z.string().optional(),
+    phone: z.string().optional(),
+    formStartedAt: z.number(),
+  }),
   consents: z
     .object({
       analytics: z.boolean().default(true),
@@ -108,16 +69,11 @@ export async function POST(request: NextRequest) {
     // Validate input
     const validatedData = signupSchema.parse(body);
 
-    const turnstileValid = await verifyTurnstileToken(
-      validatedData.turnstileToken,
-      ip,
-    );
-    if (!turnstileValid) {
+    const botGuard = validateSignupBotGuard(validatedData.botGuard);
+    if (!botGuard.ok) {
+      console.warn("Signup bot guard rejected request:", botGuard.reason, ip);
       return NextResponse.json(
-        {
-          success: false,
-          error: "Turnstile verification failed. Please try again.",
-        },
+        { success: false, error: botGuardFailureMessage() },
         { status: 400 },
       );
     }
