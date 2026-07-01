@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
+import { useRef, useState, Suspense } from "react";
 import Link from "next/link";
-import Script from "next/script";
 import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { Button } from "@/components/ui/button";
@@ -18,14 +17,10 @@ import {
 } from "@/components/ui/card";
 import { Icon } from "@/components/logo";
 import { Loader2, Eye, EyeOff } from "lucide-react";
-
-declare global {
-  interface Window {
-    onSignupTurnstileSuccess?: (token: string) => void;
-    onSignupTurnstileExpired?: () => void;
-    onSignupTurnstileError?: () => void;
-  }
-}
+import {
+  TurnstileWidget,
+  type TurnstileWidgetHandle,
+} from "@/components/turnstile-widget";
 
 function SignupForm() {
   const { signup } = useAuth();
@@ -51,28 +46,7 @@ function SignupForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState("");
-
-  useEffect(() => {
-    window.onSignupTurnstileSuccess = (token: string) => {
-      setTurnstileToken(token);
-      setError("");
-    };
-
-    window.onSignupTurnstileExpired = () => {
-      setTurnstileToken("");
-    };
-
-    window.onSignupTurnstileError = () => {
-      setTurnstileToken("");
-      setError("Turnstile verification failed. Please try again.");
-    };
-
-    return () => {
-      delete window.onSignupTurnstileSuccess;
-      delete window.onSignupTurnstileExpired;
-      delete window.onSignupTurnstileError;
-    };
-  }, []);
+  const turnstileRef = useRef<TurnstileWidgetHandle>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -109,6 +83,8 @@ function SignupForm() {
         turnstileToken,
       });
     } catch (err) {
+      setTurnstileToken("");
+      turnstileRef.current?.reset();
       setError(err instanceof Error ? err.message : "Signup failed");
     } finally {
       setIsLoading(false);
@@ -274,13 +250,21 @@ function SignupForm() {
               </div>
             )}
 
-            <div
-              className="cf-turnstile"
-              data-sitekey={turnstileSiteKey || ""}
-              data-callback="onSignupTurnstileSuccess"
-              data-expired-callback="onSignupTurnstileExpired"
-              data-error-callback="onSignupTurnstileError"
-            />
+            {turnstileSiteKey ? (
+              <TurnstileWidget
+                ref={turnstileRef}
+                siteKey={turnstileSiteKey}
+                onSuccess={(token) => {
+                  setTurnstileToken(token);
+                  setError("");
+                }}
+                onExpire={() => setTurnstileToken("")}
+                onError={() => {
+                  setTurnstileToken("");
+                  setError("Turnstile verification failed. Please try again.");
+                }}
+              />
+            ) : null}
 
             <div className="space-y-3 pt-2">
               <div className="flex items-start space-x-2">
@@ -371,10 +355,6 @@ function SignupForm() {
 export default function SignupPage() {
   return (
     <>
-      <Script
-        src="https://challenges.cloudflare.com/turnstile/v0/api.js"
-        strategy="afterInteractive"
-      />
       <Suspense
         fallback={
           <div className=" mx-auto flex min-h-screen items-center justify-center px-4 py-8">
