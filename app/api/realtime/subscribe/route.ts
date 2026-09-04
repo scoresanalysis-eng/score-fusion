@@ -51,7 +51,6 @@ export async function GET(request: NextRequest) {
       message: "Real-time subscription endpoint",
       data: {
         userId: auth.user?.id,
-        isGuest: auth.user?.guest || false,
         availableChannels: getAvailableChannels(auth.user),
       },
     });
@@ -67,7 +66,6 @@ export async function GET(request: NextRequest) {
 // Helper function to get available channels for user
 function getAvailableChannels(user?: {
   id: string;
-  guest?: boolean;
   isAdmin?: boolean;
   displayName?: string;
 }): string[] {
@@ -87,33 +85,21 @@ function getAvailableChannels(user?: {
     `user:${user.id}:updates`,
   ];
 
-  if (!user.guest) {
-    const registeredChannels = ["public:featured", "public:announcements"];
+  const registeredChannels = ["public:featured", "public:announcements"];
 
-    if (user.isAdmin) {
-      const adminChannels = [
-        "admin:alerts",
-        "admin:analytics",
-        "admin:users",
-        "admin:tips_management",
-      ];
-
-      return [
-        ...publicChannels,
-        ...userChannels,
-        ...registeredChannels,
-        ...adminChannels,
-      ];
-    }
-
-    return [...publicChannels, ...userChannels, ...registeredChannels];
+  if (user.isAdmin) {
+    return [
+      ...publicChannels,
+      ...userChannels,
+      ...registeredChannels,
+      "admin:alerts",
+      "admin:analytics",
+      "admin:users",
+      "admin:tips_management",
+    ];
   }
 
-  // Guest users get limited channels
-  return [
-    ...publicChannels.slice(0, 2), // Limited public channels
-    ...userChannels,
-  ];
+  return [...publicChannels, ...userChannels, ...registeredChannels];
 }
 
 // Server-Sent Events endpoint as an alternative to WebSockets
@@ -154,7 +140,6 @@ export async function POST(request: NextRequest) {
       user: {
         id: auth.user.id,
         displayName: auth.user.displayName,
-        guest: auth.user.guest,
       },
     });
 

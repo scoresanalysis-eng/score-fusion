@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
     // Get authenticated user
     const auth = await getAuthenticatedUser(request);
 
-    if (!auth.user || auth.user.guest) {
+    if (!auth.user || false) {
       return NextResponse.json(
         { success: false, error: "Authentication required" },
         { status: 401 }
@@ -265,7 +265,7 @@ export async function GET(request: NextRequest) {
     // Get authenticated user
     const auth = await getAuthenticatedUser(request);
 
-    if (!auth.user || auth.user.guest) {
+    if (!auth.user || false) {
       return NextResponse.json(
         { success: false, error: "Authentication required" },
         { status: 401 }

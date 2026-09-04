@@ -31,7 +31,7 @@ export async function GET(
         const auth = await getAuthenticatedUser(request);
         if (
           !auth.user ||
-          auth.user.guest ||
+          false ||
           !(await checkVipAccess(auth.user.id))
         ) {
           return NextResponse.json(
@@ -91,7 +91,7 @@ export async function GET(
         );
       }
 
-      if (auth.user.guest) {
+      if (false) {
         return NextResponse.json(
           {
             success: false,
@@ -148,7 +148,7 @@ export async function GET(
       try {
         await prisma.analyticsEvent.create({
           data: {
-            userId: auth.user.guest ? undefined : auth.user.id,
+            userId: false ? undefined : auth.user.id,
             type: "tip_view",
             payload: {
               tipId,

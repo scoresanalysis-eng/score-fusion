@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     // Get authenticated user from NextAuth session
     const session = await getCurrentSession();
 
-    if (!session || !session.user || session.user.guest) {
+    if (!session || !session.user || !session.user.id) {
       return NextResponse.json(
         { success: false, error: "Authentication required" },
         { status: 401 }
@@ -43,8 +43,6 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-
-    // Validate input and normalize
     const validatedData = redeemTokenSchema.parse(body);
     validatedData.token = validatedData.token.trim().toUpperCase();
 
@@ -203,7 +201,7 @@ export async function GET() {
     // Get authenticated user from NextAuth session
     const session = await getCurrentSession();
 
-    if (!session || !session.user || session.user.guest) {
+    if (!session || !session.user || !session.user.id) {
       return NextResponse.json(
         { success: false, error: "Authentication required" },
         { status: 401 }

@@ -75,7 +75,6 @@ interface User {
   name?: string | null;
   role: string;
   status: string;
-  guest: boolean;
   createdAt: string;
   lastLoginAt?: string | null;
   _count?: {
@@ -598,9 +597,6 @@ export default function AdminUsersPage() {
                               <Shield className="h-3 w-3 mr-1" />
                               Admin
                             </Badge>
-                          )}
-                          {u.guest && (
-                            <Badge className="bg-secondary">Guest</Badge>
                           )}
                           {u.vipStatus && (
                             <Badge className="bg-yellow-500 text-white">

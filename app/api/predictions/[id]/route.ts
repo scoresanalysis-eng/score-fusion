@@ -94,7 +94,7 @@ export async function GET(
         );
       }
 
-      if (auth.user.guest) {
+      if (false) {
         return NextResponse.json(
           {
             success: false,
@@ -124,7 +124,7 @@ export async function GET(
       try {
         await prisma.analyticsEvent.create({
           data: {
-            userId: auth.user.guest ? undefined : auth.user.id,
+            userId: false ? undefined : auth.user.id,
             type: "prediction_viewed",
             payload: {
               tipId: id,

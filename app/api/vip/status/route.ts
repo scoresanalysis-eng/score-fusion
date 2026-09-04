@@ -13,7 +13,6 @@ export async function GET() {
       hasSession: !!session,
       userId: session?.user?.id,
       userEmail: session?.user?.email,
-      isGuest: session?.user?.guest,
       userInfo,
     });
 
@@ -25,18 +24,6 @@ export async function GET() {
           hasAccess: false,
         },
         error: "Authentication required",
-      });
-    }
-
-    if (session.user.guest) {
-      console.log("❌ Guest user - returning hasAccess: false");
-      return NextResponse.json({
-        success: true,
-        data: {
-          hasAccess: false,
-          subscription: null,
-          tokenAccess: null,
-        },
       });
     }
 
