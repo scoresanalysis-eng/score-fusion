@@ -15,7 +15,6 @@ export interface SessionUser {
   name?: string | null;
   displayName?: string | null;
   isAdmin?: boolean;
-  guest?: boolean;
   role?: string;
 }
 
@@ -188,7 +187,6 @@ export function getUserInfo(session: AuthSession | null) {
     authenticated: true,
     userId: session.user.id,
     isAdmin: session.user.isAdmin || session.user.role === "ADMIN",
-    isGuest: session.user.guest || false,
     displayName: session.user.displayName || session.user.name,
   };
 }
@@ -212,7 +210,6 @@ export async function getAuthenticatedUserFromSession() {
       email: session.user.email,
       displayName: session.user.displayName || session.user.name,
       isAdmin: session.user.isAdmin || session.user.role === "ADMIN",
-      guest: session.user.guest || false,
     },
     session,
     error: undefined,

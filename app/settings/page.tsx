@@ -15,7 +15,7 @@ export default function SettingsPage() {
   const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
-    if (!isLoading && (!user || user.guest)) {
+    if (!isLoading && !user) {
       router.push("/login");
     }
   }, [user, isLoading, router]);
@@ -28,7 +28,7 @@ export default function SettingsPage() {
     );
   }
 
-  if (!user || user.guest) {
+  if (!user) {
     return null;
   }
 

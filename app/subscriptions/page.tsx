@@ -50,7 +50,7 @@ export default function SubscriptionsPage() {
   const router = useRouter();
   useEffect(() => {
     async function checkVIPStatus() {
-      if (user && !user.guest) {
+      if (user) {
         try {
           const res = await api.get("/vip/status");
           if (res.success) {

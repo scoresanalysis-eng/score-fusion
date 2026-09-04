@@ -11,12 +11,22 @@ import {
 } from "@/lib/signup-bot-guard";
 
 const signupSchema = z.object({
-  email: z.string().email("Invalid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters long"),
+  email: z
+    .string({ required_error: "Email is required" })
+    .trim()
+    .min(1, "Email is required")
+    .email("Please enter a valid email address")
+    .transform((val) => val.toLowerCase()),
+  password: z
+    .string({ required_error: "Password is required" })
+    .min(1, "Password is required")
+    .min(6, "Password must be at least 6 characters long"),
   displayName: z
-    .string()
-    .min(2, "Display name must be at least 2 characters long"),
-  country: z.string().optional(),
+    .string({ required_error: "Name is required" })
+    .trim()
+    .min(1, "Name is required")
+    .min(2, "Name must be at least 2 characters long"),
+  country: z.string().trim().optional(),
   dob: z
     .string()
     .optional()
@@ -28,13 +38,19 @@ const signupSchema = z.object({
       }
       return date;
     }),
-  referralCode: z.string().optional(),
-  botGuard: z.object({
-    website: z.string().optional(),
-    company: z.string().optional(),
-    phone: z.string().optional(),
-    formStartedAt: z.number(),
-  }),
+  referralCode: z
+    .string()
+    .trim()
+    .optional()
+    .transform((val) => (val && val.length > 0 ? val.toUpperCase() : undefined)),
+  botGuard: z
+    .object({
+      website: z.string().optional(),
+      company: z.string().optional(),
+      phone: z.string().optional(),
+      formStartedAt: z.number().optional(),
+    })
+    .optional(),
   consents: z
     .object({
       analytics: z.boolean().default(true),
@@ -50,9 +66,9 @@ export async function POST(request: NextRequest) {
     const ip = getClientIp(request);
     const rateLimitResult = await rateLimit.check(
       `signup:ip:${ip}`,
-      10,
+      20,
       900000,
-    ); // 10 per 15 min
+    ); // 20 per 15 min
 
     if (!rateLimitResult.allowed) {
       return NextResponse.json(
@@ -69,35 +85,39 @@ export async function POST(request: NextRequest) {
     // Validate input
     const validatedData = signupSchema.parse(body);
 
-    const botGuard = validateSignupBotGuard(validatedData.botGuard);
-    if (!botGuard.ok) {
-      console.warn("Signup bot guard rejected request:", botGuard.reason, ip);
-      return NextResponse.json(
-        { success: false, error: botGuardFailureMessage() },
-        { status: 400 },
-      );
-    }
-
-    // Basic password validation (minimum 6 characters as per schema)
-    if (validatedData.password.length < 6) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: "Password must be at least 6 characters long",
-        },
-        { status: 400 },
-      );
+    if (validatedData.botGuard) {
+      const botGuard = validateSignupBotGuard(validatedData.botGuard);
+      if (!botGuard.ok) {
+        console.warn("Signup bot guard rejected request:", botGuard.reason, ip);
+        return NextResponse.json(
+          { success: false, error: botGuardFailureMessage() },
+          { status: 400 },
+        );
+      }
     }
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
-      where: { email: validatedData.email.toLowerCase() },
+      where: { email: validatedData.email },
     });
 
     if (existingUser) {
+      const isGoogleUser = !existingUser.passwordHash;
+      const errorMessage = isGoogleUser
+        ? "An account with this email was created with Google. Please sign in with Google."
+        : "An account with this email already exists. Please log in instead.";
+
       return NextResponse.json(
-        { success: false, error: "Email already registered" },
-        { status: 400 },
+        {
+          success: false,
+          error: errorMessage,
+          code: "EMAIL_EXISTS",
+          isGoogleAccount: isGoogleUser,
+          fieldErrors: {
+            email: errorMessage,
+          },
+        },
+        { status: 409 },
       );
     }
 
@@ -284,18 +304,69 @@ export async function POST(request: NextRequest) {
       referralApplied,
       message: "Signup successful. Please sign in with NextAuth.",
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Signup error:", error);
 
     if (error instanceof z.ZodError) {
+      const fieldErrors: Record<string, string> = {};
+      for (const issue of error.issues) {
+        const fieldName = issue.path[0]?.toString() || "general";
+        if (!fieldErrors[fieldName]) {
+          fieldErrors[fieldName] = issue.message;
+        }
+      }
+
       return NextResponse.json(
-        { success: false, error: error.errors[0].message },
+        {
+          success: false,
+          error: error.issues[0]?.message || "Validation failed",
+          fieldErrors,
+        },
         { status: 400 },
       );
     }
 
+    // Handle Prisma unique constraint violations (P2002)
+    if (error?.code === "P2002") {
+      const target = Array.isArray(error?.meta?.target)
+        ? error.meta.target.join(", ")
+        : String(error?.meta?.target || "email");
+
+      if (target.includes("email")) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "An account with this email already exists. Please log in instead.",
+            code: "EMAIL_EXISTS",
+            fieldErrors: {
+              email: "An account with this email already exists",
+            },
+          },
+          { status: 409 },
+        );
+      }
+
+      return NextResponse.json(
+        {
+          success: false,
+          error: `A user with this ${target} already exists.`,
+          code: "UNIQUE_CONSTRAINT",
+          fieldErrors: {
+            [target]: `This ${target} is already in use.`,
+          },
+        },
+        { status: 409 },
+      );
+    }
+
     return NextResponse.json(
-      { success: false, error: "Internal server error" },
+      {
+        success: false,
+        error:
+          error instanceof Error && error.message
+            ? error.message
+            : "An unexpected error occurred during signup. Please try again.",
+      },
       { status: 500 },
     );
   }

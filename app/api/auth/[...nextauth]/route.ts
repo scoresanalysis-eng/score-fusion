@@ -1,5 +1,6 @@
 import NextAuth, { type NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import GoogleProvider from "next-auth/providers/google";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import bcrypt from "bcryptjs";
 import prisma from "@/lib/db";
@@ -10,8 +11,8 @@ interface ExtendedUser {
   name?: string | null;
   image?: string | null;
   isAdmin?: boolean;
-  guest?: boolean;
   role?: string | null;
+  displayName?: string | null;
 }
 
 declare module "next-auth" {
@@ -20,20 +21,75 @@ declare module "next-auth" {
     accessToken?: string;
   }
   interface User extends ExtendedUser {
-    // augmentation: ensure isAdmin & guest propagate
     isAdmin?: boolean;
-    guest?: boolean;
   }
 }
 
 declare module "next-auth/jwt" {
   interface JWT {
     isAdmin?: boolean;
-    guest?: boolean;
     displayName?: string | null;
     role?: string;
     accessToken?: string;
+    image?: string | null;
   }
+}
+
+const providers: NextAuthOptions["providers"] = [
+  CredentialsProvider({
+    id: "credentials",
+    name: "Credentials",
+    credentials: {
+      email: { label: "Email", type: "email" },
+      password: { label: "Password", type: "password" },
+    },
+    async authorize(credentials): Promise<ExtendedUser | null> {
+      try {
+        if (!credentials) return null;
+
+        const email = credentials.email?.toString().toLowerCase().trim();
+        const password = credentials.password?.toString();
+        if (!email || !password) return null;
+
+        const user = await prisma.user.findUnique({ where: { email } });
+        if (!user) return null;
+        if (!user.passwordHash) {
+          throw new Error(
+            "This account was created with Google. Please click 'Continue with Google' to sign in."
+          );
+        }
+
+        const valid = await bcrypt.compare(password, user.passwordHash);
+        if (!valid) return null;
+
+        return {
+          id: user.id,
+          email: user.email,
+          name: user.displayName || user.name,
+          displayName: user.displayName || user.name,
+          image: user.image || null,
+          isAdmin: user.role === "ADMIN",
+          role: user.role,
+        };
+      } catch (e) {
+        console.error("Authorize error:", e);
+        if (e instanceof Error && e.message.includes("Google")) {
+          throw e;
+        }
+        return null;
+      }
+    },
+  }),
+];
+
+if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
+  providers.push(
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      allowDangerousEmailAccountLinking: true,
+    })
+  );
 }
 
 const authOptions: NextAuthOptions = {
@@ -46,79 +102,83 @@ const authOptions: NextAuthOptions = {
     signIn: "/login",
     error: "/login",
   },
-  providers: [
-    CredentialsProvider({
-      id: "credentials",
-      name: "Credentials",
-      credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" },
-        mode: { label: "Mode", type: "text" },
-      },
-      async authorize(credentials): Promise<ExtendedUser | null> {
-        try {
-          if (!credentials) return null;
-          const mode = (credentials.mode || "email").toString();
-
-          if (mode === "guest") {
-            // Create an ephemeral guest user
-            const guestName = `Guest ${Math.floor(
-              1000 + Math.random() * 9000,
-            )}`;
-            const user = await prisma.user.create({
-              data: {
-                guest: true,
-                displayName: guestName,
-                name: guestName,
-              },
-            });
-            return {
-              id: user.id,
-              email: user.email,
-              name: user.displayName,
-              image: null,
-              isAdmin: user.role === "ADMIN",
-              guest: true,
-              role: user.role,
-            };
-          }
-
-          const email = credentials.email?.toString().toLowerCase();
-          const password = credentials.password?.toString();
-          if (!email || !password) return null;
-
-          const user = await prisma.user.findUnique({ where: { email } });
-          if (!user || !user.passwordHash) return null;
-
-          const valid = await bcrypt.compare(password, user.passwordHash);
-          if (!valid) return null;
-
-          return {
-            id: user.id,
-            email: user.email,
-            name: user.displayName,
-            image: null,
-            isAdmin: user.role === "ADMIN",
-            guest: !!user.guest,
-            role: user.role,
-          };
-        } catch (e) {
-          console.error("Authorize error:", e);
-          return null;
+  providers,
+  events: {
+    async createUser({ user }) {
+      // Ensure new OAuth users (e.g. Google) have a wallet, profile, and displayName initialized
+      try {
+        if (user.name) {
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { displayName: user.name },
+          });
         }
-      },
-    }),
-  ],
+      } catch (err) {
+        console.error("Failed to set displayName for user:", err);
+      }
+
+      try {
+        const existingWallet = await prisma.wallet.findUnique({
+          where: { userId: user.id },
+        });
+        if (!existingWallet) {
+          await prisma.wallet.create({
+            data: {
+              userId: user.id,
+              balance: 0,
+              tokens: 5,
+            },
+          });
+        }
+      } catch (err) {
+        console.error("Failed to initialize wallet for user:", err);
+      }
+
+      try {
+        const existingProfile = await prisma.profile.findUnique({
+          where: { userId: user.id },
+        });
+        if (!existingProfile) {
+          await prisma.profile.create({
+            data: {
+              userId: user.id,
+              analyticsConsent: true,
+              marketingConsent: false,
+            },
+          });
+        }
+      } catch (err) {
+        console.error("Failed to initialize profile for user:", err);
+      }
+    },
+  },
   callbacks: {
     async jwt({ token, user, account }) {
       if (account) {
         token.accessToken = account.access_token;
       }
       if (user) {
-        token.isAdmin = (user as ExtendedUser).isAdmin ?? false;
-        token.guest = (user as ExtendedUser).guest ?? false;
-        token.displayName = (user as ExtendedUser).name ?? null;
+        token.sub = user.id;
+        token.isAdmin = (user as ExtendedUser).isAdmin ?? ((user as ExtendedUser).role === "ADMIN");
+        token.displayName = (user as ExtendedUser).displayName || user.name || null;
         token.role = (user as ExtendedUser).role ?? "USER";
+        token.image = user.image || null;
+      } else if (token.sub && !token.role) {
+        // Hydrate from DB if missing on token
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: token.sub },
+            select: { role: true, displayName: true, name: true, image: true },
+          });
+          if (dbUser) {
+            token.role = dbUser.role;
+            token.isAdmin = dbUser.role === "ADMIN";
+            token.displayName = dbUser.displayName || dbUser.name || null;
+            token.image = dbUser.image || null;
+          }
+        } catch (e) {
+          console.error("Error hydrating user in jwt callback:", e);
+        }
       }
       return token;
     },
@@ -128,10 +188,11 @@ const authOptions: NextAuthOptions = {
         session.user.id = (token.sub as string) || session.user.id;
         session.user.displayName =
           token.displayName || session.user.name || null;
+        session.user.name = token.displayName || session.user.name || null;
         session.user.isAdmin = token.isAdmin ?? false;
-        session.user.guest = token.guest ?? false;
         session.user.role =
           typeof token.role === "string" ? token.role : "USER";
+        session.user.image = token.image || session.user.image || null;
       }
       return session;
     },

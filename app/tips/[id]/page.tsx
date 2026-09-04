@@ -148,7 +148,7 @@ export default function TipDetailPage() {
                   View VIP Plans
                 </Button>
               </Link>
-              {(!user || user.guest) && (
+              {!user && (
                 <Link href="/login">
                   <Button
                     size="sm"

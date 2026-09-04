@@ -103,8 +103,8 @@ export default function DashboardPage() {
         setLoading(true);
 
         let vipStatus = false;
-        // Fetch VIP status if user is logged in and not a guest
-        if (user && !user.guest) {
+        // Fetch VIP status if user is logged in
+        if (user) {
           const vipRes = await api.get("/vip/status");
           if (vipRes.success) {
             const vipData = vipRes.data as VIPStatus;
@@ -123,7 +123,7 @@ export default function DashboardPage() {
             predictions: Prediction[];
           };
           setPredictions(predictionsData.predictions);
-        } else if (vipStatus && !user?.guest) {
+        } else if (vipStatus) {
           // If VIP predictions fail, fallback to free predictions
           const freeRes = await api.get(
             "/predictions?vip=false&limit=3&today=true",
@@ -145,7 +145,7 @@ export default function DashboardPage() {
 
         // Fetch user statistics and compute derived win rate with fallbacks
         let winRateCandidate: number | null = null;
-        if (user && !user.guest) {
+        if (user) {
           const statsRes = await api.get("/user/stats");
           if (statsRes.success) {
             const s = statsRes.data as UserStats;
@@ -191,7 +191,7 @@ export default function DashboardPage() {
         }
 
         // Show welcome tooltip for new users
-        if (user && !user.guest) {
+        if (user) {
           const joinedRecently = userStats.joinedDaysAgo <= 3;
           const hasLowActivity = userStats.totalTipsViewed < 5;
           setShowWelcomeTooltip(joinedRecently && hasLowActivity);
@@ -394,7 +394,7 @@ export default function DashboardPage() {
           {/* Sidebar */}
           <div className="space-y-4 sm:space-y-6">
             {/* User Engagement Features */}
-            {user && !user.guest && (
+            {user && (
               <UserEngagement user={user} userStats={userStats} isVIP={isVIP} />
             )}
             {/* Enhanced VIP Access Card with Social Proof */}
@@ -538,7 +538,7 @@ export default function DashboardPage() {
             </Card> */}
 
             {/* Progress Tracker for Engagement */}
-            {user && !user.guest && (
+            {user && (
               <Card className="border-primary">
                 <CardContent className="p-3 sm:p-4">
                   <div className="flex items-center justify-between mb-2">

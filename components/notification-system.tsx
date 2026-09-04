@@ -41,7 +41,7 @@ export function NotificationSystem({ user, isVIP }: NotificationSystemProps) {
     const contextualNotifications: Notification[] = [];
 
     // Welcome notification for new users
-    if (user && !user.guest) {
+    if (user) {
       const joinedRecently = new Date().getTime() - new Date(user.createdAt || Date.now()).getTime() < 24 * 60 * 60 * 1000;
       if (joinedRecently) {
         contextualNotifications.push({
@@ -60,7 +60,7 @@ export function NotificationSystem({ user, isVIP }: NotificationSystemProps) {
     }
 
     // VIP promotion for active non-VIP users only
-    if (!isVIP && user && !user.guest) {
+    if (!isVIP && user) {
       contextualNotifications.push({
         id: "vip-promo",
         type: "promotion",

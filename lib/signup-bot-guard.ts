@@ -1,6 +1,3 @@
-const MIN_FORM_DURATION_MS = 3_000;
-const MAX_FORM_DURATION_MS = 30 * 60 * 1_000;
-
 export interface SignupBotGuardPayload {
   website?: string;
   company?: string;
@@ -10,34 +7,27 @@ export interface SignupBotGuardPayload {
 
 export type BotGuardResult =
   | { ok: true }
-  | { ok: false; reason: "honeypot" | "too_fast" | "expired" | "invalid" };
+  | { ok: false; reason: "honeypot" };
 
 export function validateSignupBotGuard(
-  payload: SignupBotGuardPayload,
+  payload?: SignupBotGuardPayload,
 ): BotGuardResult {
-  const { website, company, phone, formStartedAt } = payload;
+  if (!payload) return { ok: true };
 
-  if (website?.trim() || company?.trim() || phone?.trim()) {
+  const { website, company } = payload;
+
+  // Only check hidden bot traps (website/company). Do not check phone as browser autofill often populates phone.
+  if (website && website.trim().length > 0) {
     return { ok: false, reason: "honeypot" };
   }
 
-  if (typeof formStartedAt !== "number" || !Number.isFinite(formStartedAt)) {
-    return { ok: false, reason: "invalid" };
-  }
-
-  const elapsed = Date.now() - formStartedAt;
-
-  if (elapsed < MIN_FORM_DURATION_MS) {
-    return { ok: false, reason: "too_fast" };
-  }
-
-  if (elapsed > MAX_FORM_DURATION_MS) {
-    return { ok: false, reason: "expired" };
+  if (company && company.trim().length > 0) {
+    return { ok: false, reason: "honeypot" };
   }
 
   return { ok: true };
 }
 
 export function botGuardFailureMessage(): string {
-  return "Unable to create account. Please try again.";
+  return "Unable to verify request. Please try again.";
 }

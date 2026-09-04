@@ -211,7 +211,7 @@ export default function VIPAreaPage() {
   }, [api]);
 
   useEffect(() => {
-    if (!user || user.guest) {
+    if (!user) {
       setHasVIPAccess(false);
       setEntitlements(null);
       setLoading(false);

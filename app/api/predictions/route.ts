@@ -73,15 +73,6 @@ export async function GET(request: NextRequest) {
           { status: 401 }
         );
       }
-      if (session.user.guest) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: "VIP content not available for guest users",
-          },
-          { status: 403 }
-        );
-      }
       const vipAccess = await hasVIPAccess(session.user.id);
       if (!vipAccess) {
         return NextResponse.json(
@@ -92,9 +83,6 @@ export async function GET(request: NextRequest) {
     }
 
     let tipViewLimit: number | null = null;
-    if (session?.user?.guest) {
-      tipViewLimit = 10;
-    }
 
     const where: Prisma.TipWhereInput = {
       status: "published",
@@ -225,7 +213,7 @@ export async function GET(request: NextRequest) {
       try {
         await prisma.analyticsEvent.create({
           data: {
-            userId: session.user.guest ? undefined : session.user.id,
+            userId: session?.user?.id ?? undefined,
             type: "predictions_viewed",
             payload: {
               tipIds: tips.map((t: { id: string }) => t.id),

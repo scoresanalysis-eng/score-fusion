@@ -9,10 +9,10 @@ export default function AuthShell({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const pathname = usePathname();
 
-  // Don't show sidebar on admin routes - admin has its own layout
+  // Admin has its own layout with its own sidebar
   const isAdminRoute = pathname?.startsWith("/admin");
 
-  // Guest users now have same privileges as basic users - show sidebar for both
+  // Only show the app sidebar for authenticated users on non-admin routes
   const hasSidebar = !!user && !isAdminRoute;
 
   return (

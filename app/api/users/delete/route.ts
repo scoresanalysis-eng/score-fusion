@@ -24,16 +24,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (session.user.guest) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: { message: "Guest accounts cannot be deleted" },
-        },
-        { status: 403 },
-      );
-    }
-
     const body = await request.json();
     const validatedData = deleteAccountSchema.parse(body);
 

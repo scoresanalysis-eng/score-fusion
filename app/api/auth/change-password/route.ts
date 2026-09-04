@@ -37,17 +37,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Guest users cannot change password
-    if (session.user.guest) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: { message: "Guest users cannot change password" },
-        },
-        { status: 403 }
-      );
-    }
-
     const userId = session.user.id;
 
     // Rate limiting

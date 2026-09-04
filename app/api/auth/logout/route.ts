@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     // Track logout analytics if user was authenticated
-    if (session?.user && !session.user.guest) {
+    if (session?.user) {
       try {
         const ip = getClientIp(request);
         await prisma.analyticsEvent.create({

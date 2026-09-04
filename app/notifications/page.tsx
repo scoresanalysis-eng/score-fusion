@@ -11,7 +11,7 @@ export default function NotificationsPage() {
   const router = useRouter();
 
   useEffect(() => {
-    if (!isLoading && (!user || user.guest)) {
+    if (!isLoading && !user) {
       router.push("/login");
     }
   }, [user, isLoading, router]);
@@ -24,7 +24,7 @@ export default function NotificationsPage() {
     );
   }
 
-  if (!user || user.guest) {
+  if (!user) {
     return null;
   }
 

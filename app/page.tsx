@@ -873,8 +873,8 @@ export default function Home() {
                 <Image
                   src="/images/download.png"
                   alt="ScoreFusion App Interface"
-                  height={40}
-                  width={40}
+                  height={240}
+                  width={240}
                   className="rounded-lg md:rounded-2xl shadow-2xl w-full max-w-[280px] sm:max-w-xs md:max-w-sm object-cover"
                 />
                 <div className="absolute -bottom-3 md:-bottom-4 left-1/2 -translate-x-1/2 bg-background border border-border rounded-lg px-3 md:px-4 py-1.5 md:py-2 shadow-lg flex items-center gap-2 text-xs md:text-sm whitespace-nowrap">

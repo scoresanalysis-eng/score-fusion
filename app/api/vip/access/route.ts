@@ -17,18 +17,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // Guest users cannot have VIP access
-    if (session.user.guest) {
-      return NextResponse.json(
-        {
-          error: "VIP access unavailable",
-          message:
-            "Guest users cannot access VIP content. Please sign up for an account.",
-        },
-        { status: 403 }
-      );
-    }
-
     const body = await request.json();
     const { resourceId, resourceType } = body; // tipId or 'section'
 

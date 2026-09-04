@@ -21,7 +21,6 @@ export async function GET() {
         email: session.user.email,
         displayName: session.user.displayName || session.user.name,
         isAdmin: session.user.isAdmin,
-        guest: session.user.guest,
         role: session.user.role,
       },
     });

@@ -23,7 +23,6 @@ import {
   Menu,
   X,
   LogOut,
-  UserPlus,
   Activity,
   CreditCard,
   Home,
@@ -45,18 +44,6 @@ const items = [
   { href: "/blog", label: "Blog", icon: BookCheck },
 ];
 
-// Guest users have access to all features like basic users
-const guestItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/tips", label: "Tips", icon: TrendingUp },
-  // { href: "/livescores", label: "Live Scores", icon: Activity },
-  { href: "/vip", label: "VIP", icon: Crown },
-  { href: "/history", label: "History", icon: Trophy },
-  { href: "/analytics", label: "Analytics", icon: BarChart3 },
-  { href: "/help", label: "Help", icon: HelpCircle },
-  { href: "/contact", label: "Contact", icon: Mail },
-];
-
 export function AppSidebar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
@@ -68,7 +55,7 @@ export function AppSidebar() {
     let ignore = false;
     const fetchVIP = async () => {
       try {
-        if (user && !user.guest) {
+        if (user) {
           const res = await api.get("/vip/status");
           if (!ignore) {
             const has =
@@ -90,8 +77,7 @@ export function AppSidebar() {
 
   if (!user) return null;
 
-  // Guest users now have access to sidebar with limited items
-  const menuItems = user.guest ? guestItems : items;
+  const menuItems = items;
 
   const closeSheet = () => setIsOpen(false);
   const toggleSheet = () => setIsOpen(!isOpen);
@@ -123,39 +109,24 @@ export function AppSidebar() {
 
           {/* Desktop User Actions */}
           <div className="pt-4 mt-4 border-t border-border space-y-1">
-            {!user.guest && (
-              <>
-                <Link href="/profile">
-                  <Button
-                    variant={pathname === "/profile" ? "default" : "ghost"}
-                    className="w-full justify-start gap-2"
-                  >
-                    <User className="h-4 w-4" />
-                    Profile
-                  </Button>
-                </Link>
-                <Link href="/settings">
-                  <Button
-                    variant={pathname === "/settings" ? "default" : "ghost"}
-                    className="w-full justify-start gap-2"
-                  >
-                    <Settings className="h-4 w-4" />
-                    Settings
-                  </Button>
-                </Link>
-              </>
-            )}
-            {user.guest && (
-              <Link href="/signup">
-                <Button
-                  variant="outline"
-                  className="w-full justify-start gap-2"
-                >
-                  <UserPlus className="h-4 w-4" />
-                  Create Account
-                </Button>
-              </Link>
-            )}
+            <Link href="/profile">
+              <Button
+                variant={pathname === "/profile" ? "default" : "ghost"}
+                className="w-full justify-start gap-2"
+              >
+                <User className="h-4 w-4" />
+                Profile
+              </Button>
+            </Link>
+            <Link href="/settings">
+              <Button
+                variant={pathname === "/settings" ? "default" : "ghost"}
+                className="w-full justify-start gap-2"
+              >
+                <Settings className="h-4 w-4" />
+                Settings
+              </Button>
+            </Link>
             <Button
               variant="ghost"
               onClick={handleLogout}
@@ -221,7 +192,7 @@ export function AppSidebar() {
                 }`}
               >
                 <CreditCard className="h-6 w-6" />
-                {!user?.guest && !isVIP && (
+                {!isVIP && (
                   <div className="absolute -top-1 -right-1 h-3 w-3 bg-amber-500 rounded-full animate-pulse" />
                 )}
               </button>
@@ -264,15 +235,9 @@ export function AppSidebar() {
                   <h2 className="text-base font-bold">
                     {user.displayName || "User"}
                   </h2>
-                  {user.guest ? (
-                    <p className="text-xs text-muted-foreground">
-                      Guest Account
-                    </p>
-                  ) : (
-                    <p className="text-xs text-muted-foreground">
-                      {user.email || ""}
-                    </p>
-                  )}
+                  <p className="text-xs text-muted-foreground">
+                    {user.email || ""}
+                  </p>
                 </div>
               </div>
               <button
@@ -338,38 +303,24 @@ export function AppSidebar() {
                     </Button>
                   </Link>
                 )}
-                {user.guest ? (
-                  <Link href="/signup" onClick={closeSheet}>
-                    <Button
-                      variant="outline"
-                      className="w-full justify-start gap-3 h-12"
-                    >
-                      <UserPlus className="h-5 w-5" />
-                      Create Account
-                    </Button>
-                  </Link>
-                ) : (
-                  <>
-                    <Link href="/profile" onClick={closeSheet}>
-                      <Button
-                        variant="ghost"
-                        className="w-full justify-start gap-3 h-12"
-                      >
-                        <User className="h-5 w-5" />
-                        Profile
-                      </Button>
-                    </Link>
-                    <Link href="/settings" onClick={closeSheet}>
-                      <Button
-                        variant="ghost"
-                        className="w-full justify-start gap-3 h-12"
-                      >
-                        <Settings className="h-5 w-5" />
-                        Settings
-                      </Button>
-                    </Link>
-                  </>
-                )}
+                <Link href="/profile" onClick={closeSheet}>
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start gap-3 h-12"
+                  >
+                    <User className="h-5 w-5" />
+                    Profile
+                  </Button>
+                </Link>
+                <Link href="/settings" onClick={closeSheet}>
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start gap-3 h-12"
+                  >
+                    <Settings className="h-5 w-5" />
+                    Settings
+                  </Button>
+                </Link>
                 <Button
                   variant="ghost"
                   onClick={handleLogout}
