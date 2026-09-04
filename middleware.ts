@@ -1,10 +1,10 @@
-import { getToken } from "next-auth/jwt";
+import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import type { JWT } from "next-auth/jwt";
 
 /**
- * Routes that are fully public — no authentication required.
- * Everything else requires a valid session.
+ * Exact public paths — no authentication required.
  */
 const PUBLIC_PATHS = new Set([
   "/",
@@ -15,14 +15,13 @@ const PUBLIC_PATHS = new Set([
   "/terms",
 ]);
 
-/** Prefix-based public paths (any path starting with these is public) */
+/** Prefix-based public paths */
 const PUBLIC_PREFIXES = [
-  "/blog",          // /blog and /blog/[slug]
+  "/blog",
   "/login",
   "/signup",
   "/forgot-password",
   "/reset-password",
-  // Next.js internals & static files
   "/_next",
   "/favicon",
   "/images",
@@ -32,71 +31,65 @@ const PUBLIC_PREFIXES = [
   "/sitemap",
 ];
 
-/** Public API routes (prefix match) */
+/** Public API prefixes */
 const PUBLIC_API_PREFIXES = [
-  "/api/auth",          // NextAuth endpoints (signin, signout, session, csrf, etc.)
-  "/api/blog",          // Public blog posts
-  "/api/carousels",     // Landing page carousels
-  "/api/health",        // Health check
-  "/api/predictions",   // Public (free) predictions shown on landing
-  "/api/livescores",    // Livescores visible on landing
+  "/api/auth",
+  "/api/blog",
+  "/api/carousels",
+  "/api/health",
+  "/api/predictions",
+  "/api/livescores",
 ];
 
 function isPublic(pathname: string): boolean {
-  // Exact match
   if (PUBLIC_PATHS.has(pathname)) return true;
-
-  // Prefix match for pages
   if (PUBLIC_PREFIXES.some((p) => pathname.startsWith(p))) return true;
-
-  // API routes
   if (pathname.startsWith("/api/")) {
     return PUBLIC_API_PREFIXES.some((p) => pathname.startsWith(p));
   }
-
   return false;
 }
 
-export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+export default withAuth(
+  function middleware(req: NextRequest & { nextauth: { token: JWT | null } }) {
+    const { pathname } = req.nextUrl;
 
-  // Always allow public routes through
-  if (isPublic(pathname)) {
-    return NextResponse.next();
-  }
-
-  // Check for a valid NextAuth JWT token
-  const token = await getToken({
-    req: request,
-    secret: process.env.NEXTAUTH_SECRET,
-  });
-
-  if (!token) {
-    // Redirect unauthenticated users to login, preserving the intended destination
-    const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("callbackUrl", pathname);
-    return NextResponse.redirect(loginUrl);
-  }
-
-  // Admin-only routes — 403 redirect for non-admins
-  if (pathname.startsWith("/admin") || pathname.startsWith("/api/admin")) {
-    const isAdmin =
-      token.isAdmin === true || token.role === "ADMIN";
-    if (!isAdmin) {
-      const dashboardUrl = new URL("/dashboard", request.url);
-      return NextResponse.redirect(dashboardUrl);
+    // Public routes always pass through
+    if (isPublic(pathname)) {
+      return NextResponse.next();
     }
-  }
 
-  return NextResponse.next();
-}
+    const token = req.nextauth.token;
+
+    // No token — redirect to login
+    if (!token) {
+      const loginUrl = new URL("/login", req.url);
+      loginUrl.searchParams.set("callbackUrl", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+
+    // Admin-only routes
+    if (pathname.startsWith("/admin") || pathname.startsWith("/api/admin")) {
+      const isAdmin = token.isAdmin === true || token.role === "ADMIN";
+      if (!isAdmin) {
+        return NextResponse.redirect(new URL("/dashboard", req.url));
+      }
+    }
+
+    return NextResponse.next();
+  },
+  {
+    callbacks: {
+      // authorized is called before middleware() — returning true lets the
+      // request through to our middleware function above.
+      // Returning false would redirect to the signIn page directly.
+      // We always return true here and handle auth logic ourselves above.
+      authorized: () => true,
+    },
+  }
+);
 
 export const config = {
-  /*
-   * Match all paths except Next.js internals and static file extensions.
-   * This keeps the matcher lean — the isPublic() check above handles
-   * the fine-grained allow-list at runtime.
-   */
   matcher: [
     "/((?!_next/static|_next/image|favicon\\.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|woff|woff2|ttf|otf|css|js)).*)",
   ],
