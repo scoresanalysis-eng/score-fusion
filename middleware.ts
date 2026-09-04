@@ -1,10 +1,9 @@
-import { withAuth } from "next-auth/middleware";
+import { getToken } from "next-auth/jwt";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import type { JWT } from "next-auth/jwt";
 
 /**
- * Exact public paths — no authentication required.
+ * Exact public paths — no auth required.
  */
 const PUBLIC_PATHS = new Set([
   "/",
@@ -15,7 +14,7 @@ const PUBLIC_PATHS = new Set([
   "/terms",
 ]);
 
-/** Prefix-based public paths */
+/** Prefix-based public paths (page routes) */
 const PUBLIC_PREFIXES = [
   "/blog",
   "/login",
@@ -31,7 +30,7 @@ const PUBLIC_PREFIXES = [
   "/sitemap",
 ];
 
-/** Public API prefixes */
+/** Public API prefixes — never require auth */
 const PUBLIC_API_PREFIXES = [
   "/api/auth",
   "/api/blog",
@@ -50,44 +49,74 @@ function isPublic(pathname: string): boolean {
   return false;
 }
 
-export default withAuth(
-  function middleware(req: NextRequest & { nextauth: { token: JWT | null } }) {
-    const { pathname } = req.nextUrl;
+/**
+ * NextAuth uses different cookie names depending on whether the site is served
+ * over HTTPS. We try both so the middleware works in dev (http) and prod (https)
+ * without having to change environment variables.
+ */
+async function getSessionToken(req: NextRequest) {
+  const secret = process.env.NEXTAUTH_SECRET;
 
-    // Public routes always pass through
-    if (isPublic(pathname)) {
-      return NextResponse.next();
-    }
+  // Try the secure (production HTTPS) cookie name first
+  let token = await getToken({
+    req,
+    secret,
+    cookieName: "__Secure-next-auth.session-token",
+  });
 
-    const token = req.nextauth.token;
-
-    // No token — redirect to login
-    if (!token) {
-      const loginUrl = new URL("/login", req.url);
-      loginUrl.searchParams.set("callbackUrl", pathname);
-      return NextResponse.redirect(loginUrl);
-    }
-
-    // Admin-only routes
-    if (pathname.startsWith("/admin") || pathname.startsWith("/api/admin")) {
-      const isAdmin = token.isAdmin === true || token.role === "ADMIN";
-      if (!isAdmin) {
-        return NextResponse.redirect(new URL("/dashboard", req.url));
-      }
-    }
-
-    return NextResponse.next();
-  },
-  {
-    callbacks: {
-      // authorized is called before middleware() — returning true lets the
-      // request through to our middleware function above.
-      // Returning false would redirect to the signIn page directly.
-      // We always return true here and handle auth logic ourselves above.
-      authorized: () => true,
-    },
+  // Fall back to the insecure (dev HTTP) cookie name
+  if (!token) {
+    token = await getToken({
+      req,
+      secret,
+      cookieName: "next-auth.session-token",
+    });
   }
-);
+
+  return token;
+}
+
+export async function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
+
+  // Always let public routes through immediately
+  if (isPublic(pathname)) {
+    return NextResponse.next();
+  }
+
+  const token = await getSessionToken(req);
+  const isApiRoute = pathname.startsWith("/api/");
+
+  if (!token) {
+    if (isApiRoute) {
+      // Never redirect API calls — return 401 JSON so the client can handle it
+      return NextResponse.json(
+        { success: false, error: "Authentication required" },
+        { status: 401 }
+      );
+    }
+    // Page routes: redirect to login, preserving the intended destination
+    const loginUrl = new URL("/login", req.url);
+    loginUrl.searchParams.set("callbackUrl", pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+
+  // Admin-only routes
+  if (pathname.startsWith("/admin") || pathname.startsWith("/api/admin")) {
+    const isAdmin = token.isAdmin === true || token.role === "ADMIN";
+    if (!isAdmin) {
+      if (isApiRoute) {
+        return NextResponse.json(
+          { success: false, error: "Admin access required" },
+          { status: 403 }
+        );
+      }
+      return NextResponse.redirect(new URL("/dashboard", req.url));
+    }
+  }
+
+  return NextResponse.next();
+}
 
 export const config = {
   matcher: [
