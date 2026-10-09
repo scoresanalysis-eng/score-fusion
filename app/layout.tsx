@@ -7,7 +7,7 @@ import { Toaster } from "@/components/ui/toaster";
 import AuthShell from "@/components/layout/auth-shell";
 import { FollowUsFloatingButton } from "@/components/follow-us-dialog";
 import { ThemeProvider } from "@/contexts/theme-context";
-
+import DeploymentPaused from "@/components/vercel";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -52,17 +52,24 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <ThemeProvider>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+      >
+        {/* <ThemeProvider>
           <AuthProvider>
             <AppNavbar />
             <FollowUsFloatingButton />
             <AuthShell>
-              <main className="min-h-screen pt-16">{children}</main>
+              <main className="min-h-screen pt-16">
+              {children}
+             
+              </main>
             </AuthShell>
             <Toaster />
           </AuthProvider>
-        </ThemeProvider>
+        </ThemeProvider> */}
+
+        <DeploymentPaused />
       </body>
     </html>
   );
