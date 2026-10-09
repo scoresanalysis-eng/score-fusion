@@ -55,21 +55,18 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {/* <ThemeProvider>
+        <ThemeProvider>
           <AuthProvider>
             <AppNavbar />
             <FollowUsFloatingButton />
             <AuthShell>
-              <main className="min-h-screen pt-16">
-              {children}
-             
-              </main>
+              <main className="min-h-screen pt-16">{children}</main>
             </AuthShell>
             <Toaster />
           </AuthProvider>
-        </ThemeProvider> */}
+        </ThemeProvider>
 
-        <DeploymentPaused />
+        {/* <DeploymentPaused /> */}
       </body>
     </html>
   );
