@@ -55,7 +55,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <ThemeProvider>
+        {/* <ThemeProvider>
           <AuthProvider>
             <AppNavbar />
             <FollowUsFloatingButton />
@@ -64,9 +64,9 @@ export default function RootLayout({
             </AuthShell>
             <Toaster />
           </AuthProvider>
-        </ThemeProvider>
+        </ThemeProvider> */}
 
-        {/* <DeploymentPaused /> */}
+        <DeploymentPaused />
       </body>
     </html>
   );
